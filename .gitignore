@@ -1,0 +1,14 @@
+node_modules/\ndist/\n.env\n.env.*\n!.env.example\n*.log\n.circle/\ncontracts/out/\ncontracts/cache/\n
+
+.env
+.env.*
+!.env.example
+console.jsonl
+traces.jsonl
+chaikachanda-app/
+contracts/out/
+contracts/cache/
+dist/
+node_modules/
+*.log
+.circle/
