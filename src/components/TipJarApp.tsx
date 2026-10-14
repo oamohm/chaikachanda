@@ -49,7 +49,7 @@ import tipJarArtifact from '../../contracts/out/TipJar.sol/TipJar.json'
 // ── Constants ──────────────────────────────────────────────────────────────────
 const ARC_TESTNET_CHAIN_ID = 5042002
 const TIPJAR = {
-  address: '0x338091a6bec44b57379d20f127867ba60859a43d' as `0x${string}`,
+  address: '0xd385945e5b5cdf022b99e4468a37ec045cd24197' as `0x${string}`,
   abi: tipJarArtifact.abi,
 }
 const arcChain = requireChain(ARC_TESTNET_CHAIN_ID)

@@ -14,8 +14,10 @@ A full Web3 Indian Chai Stall storefront on Arc Testnet. Users browse a Desi men
 
 ## Deployed Contracts
 
-- **TipJar v2** (CURRENT) — `0x338091a6bec44b57379d20f127867ba60859a43d` on Arc Testnet (Chain ID 5042002)
-  - Explorer: https://explorer.testnet.arc.io/address/0x338091a6bec44b57379d20f127867ba60859a43d
+- **TipJar v3** (CURRENT) — `0xd385945e5b5cdf022b99e4468a37ec045cd24197` on Arc Testnet (Chain ID 5042002)
+  - Owner: `0x1C248d40eeA69a4662AF4F475D8dbA06d556f628`
+  - Explorer: https://explorer.testnet.arc.io/address/0xd385945e5b5cdf022b99e4468a37ec045cd24197
+- **TipJar v2** (deprecated) — `0x338091a6bec44b57379d20f127867ba60859a43d` on Arc Testnet (Chain ID 5042002)
   - Payment: native USDC via `msg.value` (18 decimals); `MINIMUM_TIP = 1e17`; no ERC-20 approve
   - Owner (deployer wallet): `0x5B12Ce46C7194aD57d143bC22847224047b1Ef42`
   - Source: `contracts/TipJar.sol`

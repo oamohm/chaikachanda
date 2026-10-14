@@ -1,13 +1,20 @@
 {
-  "contractAddress": "0x338091a6bec44b57379d20f127867ba60859a43d",
+  "contractAddress": "0xd385945e5b5cdf022b99e4468a37ec045cd24197",
   "network": "ARC-TESTNET",
   "deployerWalletId": "3c2464b2-8369-52e2-a782-800bbeca5396",
   "contract_code_path": "/home/user/app/contracts/TipJar.sol",
   "contract_compiled_code_path": "/home/user/app/contracts/out/TipJar.sol/TipJar.json",
   "contract_network_and_links": {
-    "Arc Testnet": "https://explorer.testnet.arc.io/address/0x338091a6bec44b57379d20f127867ba60859a43d"
+    "Arc Testnet": "https://explorer.testnet.arc.io/address/0xd385945e5b5cdf022b99e4468a37ec045cd24197"
   },
   "contract_deployments": [
+    {
+      "chain": "Arc Testnet",
+      "address": "0xd385945e5b5cdf022b99e4468a37ec045cd24197",
+      "explorerUrl": "https://explorer.testnet.arc.io/address/0xd385945e5b5cdf022b99e4468a37ec045cd24197",
+      "txHash": "0xaed43fdb7f27b71f6c3eec762fbe34f35faf02cefe64c76b196b14a945e31452",
+      "deployedAt": "2026-10-14T14:56:58.185Z"
+    },
     {
       "chain": "Arc Testnet",
       "address": "0x338091a6bec44b57379d20f127867ba60859a43d",
