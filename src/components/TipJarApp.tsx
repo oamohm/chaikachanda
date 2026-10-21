@@ -53,7 +53,7 @@ const TIPJAR = {
   abi: tipJarArtifact.abi,
 }
 const arcChain = requireChain(ARC_TESTNET_CHAIN_ID)
-const ARC_RPC = 'https://rpc.testnet.arc.network'
+const ARC_RPC = 'https://rpc.testnet.arc.io'
 const arcViemChain = {
   id: ARC_TESTNET_CHAIN_ID,
   name: arcChain.name,
