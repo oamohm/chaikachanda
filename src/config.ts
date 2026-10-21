@@ -13,7 +13,6 @@ import { mainnet } from 'wagmi/chains'
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
 import {
   metaMaskWallet,
-  braveWallet,
   rabbyWallet,
   coinbaseWallet,
   rainbowWallet,
@@ -63,8 +62,8 @@ const PROJECT_ID = '13a1abd6837b2bc4e757f6c2255f1297'
 export const config = getDefaultConfig({
   appName: 'Chai Ka Chanda',
   appDescription: 'A desi Web3 tip jar powered by USDC on Arc Testnet',
-  appUrl: 'https://chaikachanda.netlify.app',
-  appIcon: 'https://chaikachanda.netlify.app/favicon.ico',
+  appUrl: 'https://chaikachanda.vercel.app',
+  appIcon: 'https://chaikachanda.vercel.app/favicon.ico',
   projectId: PROJECT_ID,
   chains: [arcTestnetChain, mainnet],
   transports: {
@@ -76,16 +75,15 @@ export const config = getDefaultConfig({
     {
       groupName: 'Popular',
       wallets: [
-        injectedWallet,      // prioritised first — catches MetaMask Mobile, Trust, OKX in-app browsers
+        injectedWallet,      // first — catches Brave Wallet, MetaMask, Trust, OKX and any in-app wallet browser
         metaMaskWallet,
-        braveWallet,
         rabbyWallet,
         coinbaseWallet,
         rainbowWallet,
         okxWallet,
         bitgetWallet,
         trustWallet,
-        walletConnectWallet,
+        walletConnectWallet, // QR / deep-link for every other wallet
       ],
     },
   ],
