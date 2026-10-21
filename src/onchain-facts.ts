@@ -19,7 +19,13 @@ const ARC_TESTNET: ChainInfo = {
   id: 5042002,
   name: 'Arc Testnet',
   nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
-  rpcUrls: ['https://rpc.testnet.arc.network', 'https://rpc.testnet.arc.io'],
+  // Official endpoints from docs.arc.io/integrate/connect-to-arc (primary first)
+  rpcUrls: [
+    'https://rpc.testnet.arc.io',
+    'https://rpc.blockdaemon.testnet.arc.io',
+    'https://rpc.drpc.testnet.arc.io',
+    'https://rpc.quicknode.testnet.arc.io',
+  ],
   explorerBase: 'https://explorer.testnet.arc.io',
 }
 
