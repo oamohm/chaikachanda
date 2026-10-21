@@ -32,9 +32,9 @@ const ARC_CHAIN_ID = 5042002
 const arcFact = requireChain(ARC_CHAIN_ID)
 const arcUsdc = getUsdc(ARC_CHAIN_ID)
 
-// Two RPC endpoints for failover — primary from onchain-facts, backup known public node
-const ARC_RPC_PRIMARY   = arcFact.rpcUrls[0] ?? 'https://rpc.testnet.arc.network'
-const ARC_RPC_SECONDARY = 'https://rpc.testnet.arc.io'
+// All official RPC endpoints, primary first — wagmi fails over between them
+const ARC_RPCS = arcFact.rpcUrls
+const ARC_RPC_PRIMARY = ARC_RPCS[0] ?? 'https://rpc.testnet.arc.io'
 
 export const arcTestnetChain = {
   id: ARC_CHAIN_ID,
@@ -45,7 +45,7 @@ export const arcTestnetChain = {
     decimals: arcFact.nativeCurrency.decimals,
   },
   rpcUrls: {
-    default: { http: [ARC_RPC_PRIMARY, ARC_RPC_SECONDARY] },
+    default: { http: ARC_RPCS },
   },
   blockExplorers: {
     default: { name: 'Arc Explorer', url: arcFact.explorerBase },
@@ -67,8 +67,7 @@ export const config = getDefaultConfig({
   projectId: PROJECT_ID,
   chains: [arcTestnetChain, mainnet],
   transports: {
-    // Failover: try primary RPC first, fall back to secondary
-    [ARC_CHAIN_ID]: fallback([http(ARC_RPC_PRIMARY), http(ARC_RPC_SECONDARY)]),
+    [ARC_CHAIN_ID]: fallback(ARC_RPCS.map((url) => http(url))),
     [mainnet.id]: http(),
   },
   wallets: [
