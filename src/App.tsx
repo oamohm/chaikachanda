@@ -4,7 +4,6 @@ import { WagmiProvider } from 'wagmi';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import TipJarApp from './components/TipJarApp';
 
-// Arc Testnet Configuration
 const arcTestnet = {
   id: 5042002,
   name: 'Arc Testnet',
