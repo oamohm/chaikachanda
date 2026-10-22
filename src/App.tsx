@@ -4,7 +4,7 @@ import { WagmiProvider } from 'wagmi';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import TipJarApp from './components/TipJarApp';
 
-// Arc Testnet Configuration (Chain ID: 5042002)
+// Arc Testnet Configuration
 const arcTestnet = {
   id: 5042002,
   name: 'Arc Testnet',
@@ -19,7 +19,7 @@ const arcTestnet = {
 
 const config = getDefaultConfig({
   appName: 'Chai Ka Chanda',
-  projectId: 'a02844ca8436b1d4c2062f6bfa0f77bc', // WalletConnect Project ID
+  projectId: 'a02844ca8436b1d4c2062f6bfa0f77bc',
   chains: [arcTestnet],
   ssr: false,
 });
@@ -30,7 +30,7 @@ export default function App() {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={darkTheme()}>
+        <RainbowKitProvider theme={darkTheme()} modalSize="compact">
           <TipJarApp />
         </RainbowKitProvider>
       </QueryClientProvider>
