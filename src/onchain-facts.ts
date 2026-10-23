@@ -1,4 +1,4 @@
-// Arc Studio onchain-facts — Arc Testnet constants
+// Arc Studio onchain-facts - Arc Testnet constants
 // Single source of truth for chain config.
 
 export interface ChainInfo {
@@ -29,11 +29,11 @@ const ARC_TESTNET: ChainInfo = {
   explorerBase: 'https://explorer.testnet.arc.io',
 }
 
-// USDC on Arc Testnet — the ERC-20 precompile address (6 decimals)
+// USDC on Arc Testnet - 18 decimals native USDC representation
 const ARC_USDC: TokenInfo = {
   address: '0x3600000000000000000000000000000000000000',
   symbol: 'USDC',
-  decimals: 6,
+  decimals: 18,
 }
 
 const CHAINS: Record<number, ChainInfo> = {
