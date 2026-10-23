@@ -1,7 +1,7 @@
-import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { getDefaultConfig } from '@rainbow-me/rainbowkit'
 
-export const ARC_TESTNET_CHAIN_ID = 5042002;
-export const ARC_RPC = 'https://rpc.testnet.arc.io';
+export const ARC_TESTNET_CHAIN_ID = 5042002
+export const ARC_RPC = 'https://rpc.testnet.arc.io'
 
 export const arcTestnet = {
   id: ARC_TESTNET_CHAIN_ID,
@@ -13,11 +13,11 @@ export const arcTestnet = {
   blockExplorers: {
     default: { name: 'ArcScan', url: 'https://explorer.testnet.arc.io' },
   },
-} as const;
+} as const
 
-export const wagmiConfig = getDefaultConfig({
+export const config = getDefaultConfig({
   appName: 'Chai Ka Chanda',
   projectId: 'a02844ca8436b1d4c2062f6bfa0f77bc',
   chains: [arcTestnet],
   ssr: false,
-});
+})
