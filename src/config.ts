@@ -1,5 +1,4 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { injectedWallet, rainbowWallet, metaMaskWallet, walletConnectWallet } from '@rainbow-me/rainbowkit/wallets';
 
 export const ARC_TESTNET_CHAIN_ID = 5042002;
 export const ARC_RPC = 'https://rpc.testnet.arc.io';
@@ -14,6 +13,7 @@ export const arcTestnet = {
   },
   rpcUrls: {
     default: { http: [ARC_RPC] },
+    public: { http: [ARC_RPC] },
   },
   blockExplorers: {
     default: { name: 'ArcScan', url: 'https://explorer.testnet.arc.io' },
@@ -25,16 +25,5 @@ export const config = getDefaultConfig({
   appName: 'Chai Ka Chanda',
   projectId: 'a02844ca8436b1d4c2062f6bfa0f77bc',
   chains: [arcTestnet],
-  wallets: [
-    {
-      group: 'Popular',
-      wallets: [
-        injectedWallet,
-        metaMaskWallet,
-        rainbowWallet,
-        walletConnectWallet,
-      ],
-    },
-  ],
   ssr: false,
 });
