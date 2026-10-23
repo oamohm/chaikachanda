@@ -61,14 +61,14 @@ const arcViemChain = {
   rpcUrls: { default: { http: [ARC_RPC] } },
 } as const
 
-// RPC Retry & Timeout Fix: Prevents "Network error" popups on slow RPC responses
-const arcPublicClient = createPublicClient({
-  chain: arcViemChain,
+// Public Client with Retry and Timeout logic to eliminate Network Error Popups
+const arcPublicClient = createPublicClient({ 
+  chain: arcViemChain, 
   transport: http(ARC_RPC, {
     retryCount: 5,
     retryDelay: 2000,
     timeout: 10_000,
-  }),
+  }) 
 })
 
 const NATIVE_DECIMALS = 18
@@ -1255,4 +1255,686 @@ function TipJarInner() {
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
           <div style={{ position:'absolute',top:'3%',left:'1%',width:480,height:480,borderRadius:'50%',background:'radial-gradient(circle,rgba(180,83,9,0.28) 0%,transparent 70%)',filter:'blur(90px)' }} />
           <div style={{ position:'absolute',top:'8%',right:'4%',width:340,height:340,borderRadius:'50%',background:'radial-gradient(circle,rgba(251,191,36,0.16) 0%,transparent 70%)',filter:'blur(80px)' }} />
-          <div style={{ position:'absolute',top:'30%',right:'2%',width:320,height:320,
+          <div style={{ position:'absolute',top:'30%',right:'2%',width:320,height:320,borderRadius:'50%',background:'radial-gradient(circle,rgba(220,38,38,0.12) 0%,transparent 70%)',filter:'blur(72px)' }} />
+          <div style={{ position:'absolute',top:'45%',left:'0%',width:300,height:300,borderRadius:'50%',background:'radial-gradient(circle,rgba(146,64,14,0.20) 0%,transparent 70%)',filter:'blur(70px)' }} />
+          <div style={{ position:'absolute',bottom:'12%',left:'6%',width:360,height:360,borderRadius:'50%',background:'radial-gradient(circle,rgba(180,83,9,0.18) 0%,transparent 70%)',filter:'blur(75px)' }} />
+          <div style={{ position:'absolute',bottom:'5%',right:'3%',width:300,height:300,borderRadius:'50%',background:'radial-gradient(circle,rgba(245,158,11,0.14) 0%,transparent 70%)',filter:'blur(65px)' }} />
+        </div>
+
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-3 sm:px-5 pb-12 pt-4">
+
+          <VillageBanner lang={lang} onNftClick={() => setShowNftPass(true)} onRoyaltyClick={() => setShowRoyaltyConsole(true)} onEmergencyClick={() => setShowEmergency(true)} onBaithakClick={() => setShowBaithak(true)} onGiftClick={() => setShowGiftChai(true)} freeChaiPool={freeChaiPool} />
+
+          <div className="rounded-2xl mb-3 overflow-hidden relative" style={{
+            background: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 15%, #b45309 35%, #d97706 55%, #ea580c 70%, #9a3412 85%, #7c2d12 100%)',
+            boxShadow: '0 12px 48px rgba(153,27,27,0.50), 0 0 0 3px rgba(251,191,36,0.65), 0 0 0 6px rgba(180,83,9,0.25)',
+          }}>
+            <div className="flex items-center justify-center gap-0 py-1 px-4 overflow-hidden" style={{ background:'rgba(0,0,0,0.22)' }}>
+              {'🌸🌼🌸🌼🌸🌼🌸🌼🌸🌼🌸🌼🌸🌼🌸🌼'.split('').map((c, i) => (
+                <span key={i} className="text-xs leading-none">{c}</span>
+              ))}
+            </div>
+
+            <div className="px-4 py-2.5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-2 flex-1 min-w-0">
+                  <span className="text-3xl sm:text-4xl drop-shadow-lg flex-shrink-0">☕</span>
+                  <div className="min-w-0">
+                    <p className="display font-black leading-tight" style={{ color:'#fef3c7', fontSize:'clamp(1.4rem,4vw,2rem)', textShadow:'0 3px 12px rgba(0,0,0,0.7)' }}>
+                      {lang === 'hi' ? 'चाय का चंदा' : 'Chai Ka Chanda'}
+                    </p>
+                    <p className="text-xs sm:text-sm font-semibold leading-tight mt-1" style={{ color:'rgba(254,243,199,0.90)' }}>
+                      {lang === 'hi' ? 'स्मार्ट देसी चाय स्टॉल • इंडियन रेलवेज़ • प्लेटफ़ॉर्म नं. 1' : 'Authentic Desi Smart Stall • Indian Railways Platform No. 1'}
+                    </p>
+                    <p className="text-[11px] sm:text-xs italic mt-1" style={{ color:'rgba(254,243,199,0.70)' }}>
+                      {lang === 'hi' ? '"मुस्कुराइए, आप स्मार्ट चाय स्टॉल पर हैं!" ☕' : '"Chai First, Everything Else Later" ☕'}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {(lang === 'hi'
+                        ? ['🔥 कटिंग चाय', '🥟 समोसा', '🏺 कुल्हड़']
+                        : ['🔥 Cutting Chai', '🥟 Samosa', '🏺 Kulhad']
+                      ).map((badge) => (
+                        <span key={badge} className="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full"
+                          style={{ background:'rgba(255,255,255,0.15)', color:'#fde68a', border:'1px solid rgba(251,191,36,0.45)' }}>
+                          {badge}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
+                  <div className="text-right rounded-xl px-3 py-1.5" style={{ background:'rgba(0,0,0,0.25)', border:'1px solid rgba(251,191,36,0.3)' }}>
+                    <p className="tabular-nums font-black leading-none flex items-center gap-1.5" style={{ color:'#fef3c7', fontSize:'clamp(1.15rem,4vw,1.6rem)' }}>
+                      {displayTotal} <UsdcIcon size={15} /><span className="text-sm font-semibold opacity-75">USDC</span>
+                    </p>
+                    <p className="text-[10px] sm:text-xs font-semibold mt-0.5" style={{ color:'rgba(254,243,199,0.65)' }}>{s.totalCollected}</p>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {[
+                      { bg:'rgba(16,185,129,0.22)', border:'rgba(16,185,129,0.5)', text: lang === 'hi' ? 'Arc Testnet Active 🟢' : 'Arc Testnet Active 🟢', color:'#6ee7b7' },
+                      { bg:'rgba(234,179,8,0.2)',   border:'rgba(234,179,8,0.5)',   text: lang === 'hi' ? 'USDC Settlement ⚡' : 'USDC Settlement ⚡',   color:'#fde68a' },
+                      { bg:'rgba(139,92,246,0.22)', border:'rgba(139,92,246,0.5)', text: lang === 'hi' ? 'Contract Secured 🔒' : 'Contract Secured 🔒', color:'#c4b5fd' },
+                    ].map(({ bg, border, text, color }) => (
+                      <div key={text} className="rounded-full px-2 py-0.5 text-right" style={{ background: bg, border: `1px solid ${border}` }}>
+                        <span className="text-[9px] font-bold" style={{ color }}>{text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="h-1" style={{ background:'linear-gradient(90deg,#06b6d4,#6366f1,#ec4899,#f59e0b,#10b981,#06b6d4)' }} />
+          </div>
+
+          <header className="mb-4 flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Coffee size={18} style={{ color:'var(--accent)',flexShrink:0 }} />
+              <span className="display text-sm font-bold" style={{ color:'var(--ink)' }}>{s.appName}</span>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+              <div className="flex rounded-xl overflow-hidden text-xs font-bold" style={{ border:'1px solid var(--border)' }}>
+                {(['hi','en'] as Lang[]).map((l) => (
+                  <button key={l} onClick={() => handleLangToggle(l)} aria-pressed={lang === l}
+                    className="px-3 py-1.5 transition-all"
+                    style={lang === l ? { background:'var(--accent)',color:'#fff' } : { background:'var(--surface-muted)',color:'var(--muted)' }}>
+                    {l === 'hi' ? 'हि' : 'EN'}
+                  </button>
+                ))}
+              </div>
+              <button onClick={handleMuteToggle} aria-label={muted ? s.unmuteLabel : s.muteLabel}
+                className="rounded-xl p-2 transition-all"
+                style={{ background:'var(--surface-muted)',color:muted ? 'var(--subtle)' : 'var(--ink-2)' }}>
+                {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+              </button>
+              <a href={FAUCET_URL} target="_blank" rel="noopener noreferrer" title={s.faucetBtn}
+                className="rounded-xl p-2 transition-all"
+                style={{ background:'rgba(95,190,255,0.12)',color:'var(--accent)',textDecoration:'none' }}>
+                <Droplets size={15} />
+              </a>
+              <ConnectButton showBalance={false} chainStatus="icon" accountStatus="avatar" />
+            </div>
+          </header>
+
+          {isWrongChain && (
+            <div className="rounded-xl px-4 py-3 mb-3 flex items-center gap-3" style={{ background:'rgba(186,43,76,0.08)',border:'1px solid rgba(186,43,76,0.20)' }}>
+              <AlertCircle size={15} style={{ color:'var(--danger)',flexShrink:0 }} />
+              <p className="text-xs flex-1" style={{ color:'var(--danger)' }}>{s.wrongChain}</p>
+              <button onClick={() => { void handleSwitchToArc() }} className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background:'var(--danger)',color:'#fff' }}>{s.switchNetwork}</button>
+            </div>
+          )}
+          {showConnectError && connectError && !isConnected && (
+            <div className="rounded-xl px-4 py-3 mb-3 flex items-start gap-3" style={{ background:'rgba(186,43,76,0.08)',border:'1px solid rgba(186,43,76,0.20)' }}>
+              <AlertCircle size={15} style={{ color:'var(--danger)',flexShrink:0,marginTop:2 }} />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold" style={{ color:'var(--danger)' }}>{s.errConnectFailed}</p>
+                <p className="text-xs mt-0.5 break-words" style={{ color:'var(--danger)',opacity:0.8 }}>{connectError.message ?? String(connectError)}</p>
+              </div>
+              <button onClick={() => setShowConnectError(false)} className="flex-shrink-0 text-xs ml-auto" style={{ color:'var(--subtle)' }}>✕</button>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+
+              <div className="space-y-4 order-2 lg:order-1">
+                <div className="rounded-2xl p-4 overflow-hidden relative" style={{ background:'linear-gradient(135deg,#fef3c7,#fde68a,#fbbf24)', border:'2px solid rgba(251,191,36,0.5)', boxShadow:'0 4px 20px rgba(251,191,36,0.25)' }}>
+                  <p className="text-sm font-black uppercase tracking-widest mb-2" style={{ color:'#92400e' }}>{lang === 'hi' ? '⭐ आज का स्पेशल' : "⭐ Today's Special"}</p>
+                  <p className="text-lg font-black mb-1" style={{ color:'#78350f' }}>🍵🥟 {lang === 'hi' ? 'कटिंग चाय + 2 समोसे' : 'Cutting Chai + 2 Samosas'}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl font-black" style={{ color:'#b45309' }}>1.00 USDC</span>
+                    <span className="text-xs line-through" style={{ color:'#d97706' }}>1.25 USDC</span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background:'#dc2626', color:'#fff' }}>SAVE 20%</span>
+                  </div>
+                  <p className="text-xs" style={{ color:'#92400e' }}>{lang === 'hi' ? '🌸 ताज़ी इलायची चाय हर घंटे तैयार' : '🌸 Fresh elaichi chai brewed every hour'}</p>
+                </div>
+
+                <ChaiPhilosophyCard lang={lang} />
+                <FmRadioWidget lang={lang} />
+
+                <div className="rounded-2xl p-4 space-y-2" style={{ background:'linear-gradient(135deg,rgba(251,191,36,0.10),rgba(234,88,12,0.07))', border:'1px solid rgba(251,191,36,0.28)' }}>
+                  <p className="text-xs font-black uppercase tracking-widest mb-1" style={{ color:'#92400e' }}>{lang === 'hi' ? '🔐 Web3 भरोसा' : '🔐 Web3 Trust'}</p>
+                  {[
+                    { icon:'⚡', text: lang === 'hi' ? 'Arc Testnet — USDC माइक्रो-पेमेंट' : 'Arc Testnet — Micro-settlements in USDC' },
+                    { icon:'🏷️', text: lang === 'hi' ? 'प्रोग्रामेबल कॉम्बो सेटलमेंट' : 'Programmable Combo Settlement' },
+                    { icon:'📜', text: lang === 'hi' ? 'लाइव ऑन-चेन रसीद' : 'Live On-Chain Receipts' },
+                    { icon:'🛡️', text: lang === 'hi' ? 'ओपन-सोर्स स्मार्ट कॉन्ट्रैक्ट' : 'Open-Source Smart Contract' },
+                  ].map(({ icon, text }) => (
+                    <div key={icon} className="flex items-start gap-2">
+                      <span className="text-sm leading-none flex-shrink-0 mt-0.5">{icon}</span>
+                      <p className="text-xs font-semibold" style={{ color:'#92400e' }}>{text}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-2xl p-5" style={glass.card}>
+                  <div style={{ height:3,borderRadius:99,background:spectral,marginBottom:16 }} />
+                  <p className="text-sm font-semibold tracking-widest uppercase mb-1" style={{ color:'var(--subtle)' }}>{s.totalCollected}</p>
+                  <div className="flex items-end gap-2 mb-1">
+                    <span className="display text-5xl font-black tabular-nums" style={{ color:'var(--ink)' }}>{displayTotal}</span>
+                    <UsdcIcon size={24} />
+                    <span className="display text-2xl font-bold mb-0.5" style={{ color:'var(--muted)' }}>USDC</span>
+                  </div>
+                  <div className="flex items-center gap-4 mt-2">
+                    <div className="flex items-center gap-1.5">
+                      <Users size={13} style={{ color:'var(--subtle)' }} />
+                      <span className="text-xs tabular-nums" style={{ color:'var(--muted)' }}>{displayTipCount} {s.supporters}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <TrendingUp size={13} style={{ color:'var(--subtle)' }} />
+                      <span className="text-xs" style={{ color:'var(--muted)' }}>{s.network}</span>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3" style={{ borderTop:'1px solid rgba(0,0,0,0.06)' }}>
+                    <p className="text-xs font-semibold mb-1" style={{ color:'var(--subtle)' }}>{lang === 'hi' ? 'चाय का चंदा' : 'Chai Ka Chanda'}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs" style={{ color:'var(--subtle)' }}>{s.tipsGoTo}</span>
+                      <span className="mono text-xs font-semibold" style={{ color:'var(--ink-2)' }}>{ownerAddress ? formatAddress(ownerAddress) : formatAddress(TIPJAR.address)}</span>
+                      <button onClick={() => void handleCopyOwner()} title={s.copied} className="ml-auto p-1 rounded-lg" style={{ background:'var(--surface-muted)',color:copied ? 'var(--success)' : 'var(--subtle)' }}>
+                        {copied ? <Check size={11} /> : <Copy size={11} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {(userBalanceDisplay || isWrongChain) && (
+                  <div className="rounded-xl px-4 py-2.5 flex items-center gap-2" style={glass.inner}>
+                    <TokenUSDC variant="branded" size={15} />
+                    <span className="text-sm tabular-nums font-semibold" style={{ color:isWrongChain ? 'var(--danger)' : 'var(--ink)' }}>
+                      {s.yourBalance}: {isWrongChain ? (lang === 'hi' ? 'गलत नेटवर्क' : 'Wrong Network') : `${userBalanceDisplay} USDC`}
+                    </span>
+                  </div>
+                )}
+
+                {isLowBalance && !isWrongChain && (
+                  <div className="rounded-xl px-4 py-2.5 flex items-center gap-2" style={{ background:'rgba(95,190,255,0.08)',border:'1px solid rgba(95,190,255,0.2)' }}>
+                    <Droplets size={13} style={{ color:'var(--accent)',flexShrink:0 }} />
+                    <p className="text-xs flex-1" style={{ color:'var(--accent)' }}>{s.faucetLowBalance}</p>
+                    <a href={FAUCET_URL} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background:'var(--accent)',color:'#fff',textDecoration:'none' }}>{s.faucetBtn}</a>
+                  </div>
+                )}
+
+                <div className="rounded-2xl overflow-hidden" style={glass.card}>
+                  <button onClick={() => setShowMerchants((v) => !v)} className="w-full flex items-center gap-3 px-5 py-4 text-left" style={{ background:'transparent' }}>
+                    <Store size={15} style={{ color:'var(--accent)',flexShrink:0 }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold" style={{ color:'var(--ink)' }}>{s.merchantTitle}</p>
+                      <p className="text-xs" style={{ color:'var(--muted)' }}>{s.merchantSubtitle}</p>
+                    </div>
+                    {showMerchants ? <ChevronUp size={15} style={{ color:'var(--subtle)' }} /> : <ChevronDown size={15} style={{ color:'var(--subtle)' }} />}
+                  </button>
+                  {showMerchants && (
+                    <div className="px-4 pb-4 space-y-2">
+                      <div className="flex gap-2 mb-2">
+                        <input value={merchantSearch} onChange={e => setMerchantSearch(e.target.value)}
+                          placeholder={lang === 'hi' ? '🔍 खोजें…' : '🔍 Search…'}
+                          className="flex-1 rounded-xl px-3 py-2 text-xs outline-none"
+                          style={{ background:'var(--surface-muted)', border:'1px solid rgba(148,163,184,0.2)', color:'var(--ink)' }} />
+                        <button onClick={() => setShowRegisterMerchant(true)}
+                          className="rounded-xl px-3 py-2 text-xs font-bold flex-shrink-0"
+                          style={{ background:'var(--accent)', color:'#fff' }}>
+                          {s.registerMerchantTitle}
+                        </button>
+                      </div>
+                      {merchants.filter(m => !merchantSearch || m.name.toLowerCase().includes(merchantSearch.toLowerCase()) || m.handle.toLowerCase().includes(merchantSearch.toLowerCase())).map((m) => (
+                        <div key={m.address} className="rounded-xl px-3 py-2.5 flex items-center gap-3" style={glass.inner}>
+                          <span className="text-lg flex-shrink-0">{m.emoji}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold" style={{ color:'var(--ink)' }}>{m.name}</p>
+                            <p className="mono text-xs" style={{ color:'var(--subtle)' }}>{m.handle} · {formatAddress(m.address)}</p>
+                          </div>
+                          <button onClick={() => setQrMerchant(m)} title={s.merchantQrTitle} className="p-1.5 rounded-lg flex-shrink-0" style={{ background:'var(--surface-muted)',color:'var(--subtle)' }}><QrCode size={12} /></button>
+                          <button onClick={() => handleMerchantSelect(m)} className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background:'var(--accent)',color:'#fff' }}>{s.merchantSelectBtn}</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(135deg,rgba(6,78,59,0.7),rgba(5,150,105,0.4))', border: '1.5px solid rgba(52,211,153,0.4)', boxShadow: '0 4px 16px rgba(5,150,105,0.15)' }}>
+                  <p className="text-xs font-black uppercase tracking-widest mb-1" style={{ color: '#6ee7b7' }}>{lang === 'hi' ? '🏺 एक और कप — Pay-it-Forward' : '🏺 Ek Aur Cup — Pay-it-Forward'}</p>
+                  <p className="text-xs mb-3" style={{ color: 'rgba(167,243,208,0.75)' }}>{lang === 'hi' ? `${freeChaiPool} मुफ्त चाय उपलब्ध — किसी ने आपके लिए दी है!` : `${freeChaiPool} free chai${freeChaiPool !== 1 ? 's' : ''} available — someone paid it forward!`}</p>
+                  <button
+                    disabled={claimingFreeChai || freeChaiPool === 0}
+                    onClick={async () => {
+                      if (freeChaiPool === 0) { toast.error(lang === 'hi' ? '☕ अभी कोई मुफ्त चाय नहीं है!' : '☕ No free chais in the pool right now!'); return }
+                      if (!isConnected) { toast(lang === 'hi' ? '🔗 पहले वॉलेट कनेक्ट करें' : '🔗 Connect your wallet first'); return }
+                      setClaimingFreeChai(true)
+                      await new Promise(r => setTimeout(r, 1500))
+                      setFreeChaiPool(p => Math.max(0, p - 1))
+                      setClaimingFreeChai(false)
+                      toast.success(lang === 'hi' ? '🎉 मुफ्त चाय क्लेम हो गई! चाय का मज़ा लें ☕' : '🎉 Free chai claimed! Enjoy your cup ☕')
+                    }}
+                    className="w-full rounded-xl py-2.5 text-sm font-bold transition-all"
+                    style={{
+                      background: freeChaiPool === 0 ? 'rgba(255,255,255,0.08)' : 'rgba(52,211,153,0.25)',
+                      color: freeChaiPool === 0 ? 'rgba(167,243,208,0.4)' : '#34d399',
+                      border: `1.5px solid ${freeChaiPool === 0 ? 'rgba(52,211,153,0.15)' : 'rgba(52,211,153,0.5)'}`,
+                      cursor: freeChaiPool === 0 ? 'not-allowed' : 'pointer',
+                    }}>
+                    {claimingFreeChai ? (lang === 'hi' ? '⏳ क्लेम हो रहा है...' : '⏳ Claiming...') : (lang === 'hi' ? '🎁 मुफ्त चाय क्लेम करें' : '🎁 Claim a Free Chai')}
+                  </button>
+                </div>
+
+                {myOrders.length > 0 && (
+                  <div className="rounded-2xl p-5" style={glass.card}>
+                    <p className="display text-sm font-bold mb-3" style={{ color:'var(--ink)' }}>{s.myOrdersTitle}</p>
+                    <div className="space-y-2">
+                      {myOrders.map((order) => {
+                        const secsAgo = Math.floor((Date.now() - order.timestamp) / 1000)
+                        const timeLabel = secsAgo < 60 ? (lang === 'hi' ? 'अभी-अभी' : 'just now') : secsAgo < 3600 ? (lang === 'hi' ? `${Math.floor(secsAgo/60)} मिनट पहले` : `${Math.floor(secsAgo/60)}m ago`) : (lang === 'hi' ? `${Math.floor(secsAgo/3600)} घंटे पहले` : `${Math.floor(secsAgo/3600)}h ago`)
+                        return (
+                          <div key={order.txHash} className="rounded-xl px-3 py-2.5" style={glass.inner}>
+                            <div className="flex items-center justify-between gap-2">
+                              <a href={buildTxExplorerUrl(ARC_TESTNET_CHAIN_ID, order.txHash)} target="_blank" rel="noopener noreferrer" className="mono text-xs inline-flex items-center gap-1 hover:underline" style={{ color:'var(--accent-hover)' }}>
+                                {formatAddress(order.txHash)} <ExternalLink size={10} />
+                              </a>
+                              <span className="text-xs font-bold tabular-nums flex-shrink-0" style={{ color:'var(--accent)' }}>{order.amount} USDC</span>
+                            </div>
+                            {order.cartLine && <p className="text-xs mt-0.5" style={{ color:'var(--muted)' }}>{order.cartLine}</p>}
+                            <p className="text-xs mt-0.5" style={{ color:'var(--subtle)' }}>{timeLabel}</p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4 order-1 lg:order-2">
+                <div className="rounded-2xl p-4" style={glass.card}>
+                  <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color:'var(--subtle)' }}>{s.fulfillmentTitle}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([['delivery', <Bike key="b" size={15} />, s.fulfillmentDelivery], ['dine-in', <UtensilsCrossed key="u" size={15} />, s.fulfillmentDineIn]] as [Fulfillment, React.ReactNode, string][]).map(([val, icon, label]) => (
+                      <button key={val} onClick={() => { setFulfillment(val); speak(label) }}
+                        className="rounded-xl p-3 flex items-center gap-2 text-sm font-semibold transition-all"
+                        style={fulfillment === val ? { background:'var(--accent)',color:'#fff',boxShadow:'0 4px 12px rgba(99,102,241,0.3)' } : { background:'var(--surface-muted)',color:'var(--ink)' }}>
+                        {icon}<span className="text-left leading-tight">{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {step === 'timed-out' && (
+                  <div className="rounded-2xl p-5" style={glass.card}>
+                    <div className="flex items-start gap-3 mb-4">
+                      <AlertCircle size={20} style={{ color:'var(--danger)',flexShrink:0,marginTop:2 }} />
+                      <div>
+                        <p className="text-sm font-semibold mb-1" style={{ color:'var(--ink)' }}>{s.txTimeout}</p>
+                        {(tipHash ?? pendingHash) && (
+                          <a href={buildTxExplorerUrl(ARC_TESTNET_CHAIN_ID, (tipHash ?? pendingHash)!)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs" style={{ color:'var(--accent-hover)' }}>
+                            <span className="mono">{formatAddress((tipHash ?? pendingHash)!)}</span><ExternalLink size={10} />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    <button onClick={() => { speak(s.tryAgain); handleReset() }} className="w-full rounded-xl py-3 text-sm font-semibold" style={{ background:'var(--surface-muted)',color:'var(--ink-2)' }}>{s.tryAgain}</button>
+                  </div>
+                )}
+
+                {step === 'done' && lastOrder && (
+                  <OrderReceiptCard order={lastOrder} lang={lang} onNewOrder={handleReset} />
+                )}
+
+                {step === 'done' && !lastOrder && (
+                  <div className="rounded-2xl p-5 text-center" style={glass.card}>
+                    <CheckCircle2 size={40} className="mx-auto mb-3" style={{ color:'var(--success)' }} />
+                    <p className="display text-lg font-bold mb-1" style={{ color:'var(--ink)' }}>{s.thankyouTitle}</p>
+                    <p className="text-sm mb-3" style={{ color:'var(--muted)' }}>{s.thankyouBody}</p>
+                    <button onClick={handleReset} className="w-full rounded-xl py-3 text-sm font-semibold mt-2" style={{ background:'var(--surface-muted)',color:'var(--ink-2)' }}>{s.sendAnother}</button>
+                  </div>
+                )}
+
+                {step === 'summary' && (
+                  <div className="rounded-2xl p-5" style={glass.card}>
+                    <p className="display text-base font-bold mb-4" style={{ color:'var(--ink)' }}>{s.summaryTitle}</p>
+                    {summaryLoading ? (
+                      <div className="flex justify-center py-6"><span className="inline-block w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin" style={{ color:'var(--accent)' }} /></div>
+                    ) : (
+                      <>
+                        {([
+                          [s.summaryYouSend(tipAmount || '0'), null],
+                          [s.summaryFee, feeEstimate != null ? `${feeEstimate} USDC` : s.summaryFeeValue],
+                          [s.summaryTo, ownerAddress ? formatAddress(ownerAddress) : formatAddress(TIPJAR.address)],
+                          [s.receiptFulfillment, fulfillment === 'delivery' ? s.fulfillmentDelivery : s.fulfillmentDineIn],
+                        ] as [string, string | null][]).map(([label, value]) => (
+                          <div key={label} className="flex items-center justify-between py-2" style={{ borderBottom:'1px solid rgba(0,0,0,0.05)' }}>
+                            <span className="text-sm" style={{ color:'var(--muted)' }}>{label}</span>
+                            {value && <span className="text-sm font-semibold mono" style={{ color:'var(--ink)' }}>{value}</span>}
+                          </div>
+                        ))}
+                        <div className="rounded-xl px-3 py-2.5 mt-3" style={{ background:'rgba(95,190,255,0.08)',border:'1px solid rgba(95,190,255,0.2)' }}>
+                          <p className="text-xs" style={{ color:'var(--accent)' }}>{s.singleStepNote}</p>
+                        </div>
+                        {userBalanceDisplay && <p className="text-xs mt-2 tabular-nums" style={{ color:'var(--subtle)' }}>{s.yourBalance}: {userBalanceDisplay} USDC</p>}
+                        <div className="flex gap-2 mt-4">
+                          <button onClick={() => setStep('idle')} className="flex-1 rounded-xl py-3 text-sm font-semibold" style={{ background:'var(--surface-muted)',color:'var(--ink-2)' }}>←</button>
+                          <button onClick={() => { speak(s.proceedBtn(tipAmount || '0')); void handleTip() }}
+                            className="flex-[3] rounded-xl py-3 text-sm font-bold flex items-center justify-center gap-2" style={{ background:'var(--accent)',color:'#fff' }}>
+                            <Heart size={15} />{s.proceedBtn(tipAmount || '0')}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {(step === 'idle' || isBusy) && (
+                  <div className="rounded-2xl p-5 overflow-hidden" style={{ background:'linear-gradient(160deg,#1c1917,#292524)', border:'2px solid rgba(251,191,36,0.35)', boxShadow:'0 8px 32px rgba(0,0,0,0.35)' }}>
+                    <div className="flex items-center gap-2 mb-1 pb-2" style={{ borderBottom:'1px dashed rgba(251,191,36,0.3)' }}>
+                      <span className="text-2xl">🚂</span>
+                      <p className="display text-lg sm:text-xl font-black tracking-wider" style={{ color:'#fef3c7', textShadow:'0 0 12px rgba(251,191,36,0.4)' }}>{lang === 'hi' ? 'प्लेटफ़ॉर्म मेनू — भाव सूची' : 'PLATFORM MENU — PRICE LIST'}</p>
+                    </div>
+                    <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color:'rgba(251,191,36,0.70)' }}>{lang === 'hi' ? 'इंडियन रेलवेज़ • चाय का चंदा स्टॉल' : 'Indian Railways • Chai Ka Chanda Stall'}</p>
+                    <div className="space-y-2 mb-3">
+                      {MENU_ITEMS.map((item) => {
+                        const label = getMenuLabel(item.key, s)
+                        const qty = cart[item.key] ?? 0
+                        return (
+                          <div key={item.key} className="rounded-xl px-3 py-2.5 flex items-center gap-3"
+                            style={qty > 0 ? { background: item.selectedBg, border:`1.5px solid ${item.color}60` } : { background:'rgba(255,255,255,0.04)', border:`1px solid ${item.color}22` }}>
+                            <span className="text-2xl flex-shrink-0">{item.emoji}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <p className="text-base sm:text-lg font-bold leading-tight" style={{ color:'#fef3c7' }}>{label}</p>
+                                {item.badge && (
+                                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full leading-none" style={{ background: BADGE_STYLES[item.badge].bg, color: BADGE_STYLES[item.badge].color }}>
+                                    {BADGE_STYLES[item.badge].label[lang]}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm tabular-nums font-extrabold" style={{ color: item.color }}>{item.price}</p>
+                              {item.splitTag && <span className="text-[10px] font-semibold" style={{ color:'#a78bfa' }}>⚡ {s.menuSplitTag}</span>}
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <button onClick={() => adjustCart(item.key, -1)} disabled={qty === 0}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
+                                style={{ background:qty === 0 ? 'rgba(0,0,0,0.04)' : 'var(--surface-muted)',color:qty === 0 ? 'var(--subtle)' : 'var(--ink-2)' }}>
+                                <Minus size={12} />
+                              </button>
+                              <span className="w-6 text-center text-sm font-bold tabular-nums" style={{ color:'var(--ink)' }}>{qty}</span>
+                              <button onClick={() => adjustCart(item.key, 1)}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
+                                style={{ background:'var(--accent)',color:'#fff' }}>
+                                <Plus size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    <div className="mb-3">
+                      <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color:'rgba(254,243,199,0.55)' }}>{lang === 'hi' ? '⚡ त्वरित राशि' : '⚡ Quick Amount'}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {([
+                          { amt:'0.25', key:'chai'      as const, bg:'rgba(20,184,166,0.18)',  color:'#14b8a6', border:'rgba(20,184,166,0.5)'  },
+                          { amt:'0.50', key:'kulhadChai'as const, bg:'rgba(234,179,8,0.18)',   color:'#d97706', border:'rgba(234,179,8,0.5)'   },
+                          { amt:'1.00', key:'combo'     as const, bg:'rgba(220,38,38,0.16)',   color:'#ef4444', border:'rgba(220,38,38,0.45)'  },
+                          { amt:'2.00', key:'kulhad'    as const, bg:'rgba(139,92,246,0.18)',  color:'#8b5cf6', border:'rgba(139,92,246,0.5)'  },
+                        ]).map(({ amt, key, bg, color, border }) => {
+                          return (
+                            <button key={amt} type="button"
+                              onClick={() => { adjustCart(key, 1); speak(`${amt} USDC`) }}
+                              className="rounded-full px-3 py-1 text-xs font-bold transition-all"
+                              style={{ background: bg, color, border:`1.5px solid ${border}` }}>
+                              +{amt} <UsdcIcon size={11} /> USDC
+                            </button>
+                          )
+                        })}
+                        <button type="button"
+                          onClick={() => {
+                            adjustCart('kulhadChai', 1)
+                            setFreeChaiPool(p => p + 1)
+                            speak(lang === 'hi' ? 'एक और कप' : 'Ek Aur Cup')
+                            toast.success(lang === 'hi' ? '🏺 एक और कप — किसी के लिए मुफ्त चाय जोड़ी गई!' : '🏺 Ek Aur Cup — a free chai added to the pool!')
+                          }}
+                          className="rounded-full px-3 py-1 text-xs font-bold transition-all"
+                          style={{ background: 'rgba(34,197,94,0.18)', color: '#22c55e', border: '1.5px solid rgba(34,197,94,0.5)' }}>
+                          🏺 {lang === 'hi' ? 'एक और कप +0.50' : 'Ek Aur Cup +0.50'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl px-3 py-2.5 mb-2" style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)' }}>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-xs font-semibold uppercase tracking-widest" style={{ color:'rgba(254,243,199,0.55)' }}>{s.yourName} <span style={{ fontWeight:400,textTransform:'none',letterSpacing:0 }}>{s.nameOptional}</span></label>
+                        <span className="text-xs tabular-nums" style={{ color:'rgba(254,243,199,0.4)' }}>{name.length}/30</span>
+                      </div>
+                      <input type="text" maxLength={30} placeholder={s.namePlaceholder} value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-transparent text-sm outline-none" style={{ color:'#fef3c7' }} />
+                    </div>
+
+                    <div className="rounded-xl px-3 py-2.5 mb-3" style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)' }}>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-xs font-semibold uppercase tracking-widest" style={{ color:'rgba(254,243,199,0.55)' }}>{s.walletAddrLabel}</label>
+                        <span className="text-xs tabular-nums" style={{ color:'rgba(254,243,199,0.4)' }}>{walletAddr.length}/42</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input type="text" maxLength={42} placeholder={s.walletAddrPlaceholder} value={walletAddr} onChange={(e) => setWalletAddr(e.target.value)} className="flex-1 bg-transparent text-sm outline-none mono" style={{ color:'#fef3c7' }} />
+                        {qrSupported && (
+                          <button type="button" onClick={() => { speak(s.scanQr); setShowQr(true) }} title={s.scanQr} className="flex-shrink-0 p-1.5 rounded-lg" style={{ background:'rgba(255,255,255,0.08)',color:'#fbbf24' }}>
+                            <QrCode size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mb-3">
+                      <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color:'rgba(254,243,199,0.55)' }}>{s.vibeLabel}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {s.vibeTags.map((tag, i) => {
+                          const isSel = vibeTag === tag
+                          return (
+                            <button key={tag} type="button" onClick={() => { setVibeTag(isSel ? null : tag); speak(tag) }}
+                              className="rounded-full px-2.5 py-1 text-xs font-semibold transition-all"
+                              style={isSel ? { background:VIBE_COLORS[i],color:VIBE_TEXT_COLORS[i],border:`1.5px solid ${VIBE_TEXT_COLORS[i]}` } : { background:'rgba(255,255,255,0.08)',color:'rgba(254,243,199,0.6)',border:'1.5px solid transparent' }}>
+                              {tag}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl px-3 py-2.5 mb-3" style={{ background:'rgba(255,255,255,0.06)', border:'1.5px dashed rgba(251,191,36,0.4)' }}>
+                      <label className="text-xs font-semibold uppercase tracking-widest mb-2 block" style={{ color:'rgba(254,243,199,0.6)' }}>🎟️ {s.couponLabel}</label>
+                      <div className="flex gap-2">
+                        <input type="text" value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                          onKeyDown={e => { if (e.key === 'Enter') handleApplyCoupon() }}
+                          placeholder={s.couponPlaceholder} maxLength={12}
+                          className="flex-1 bg-transparent text-sm outline-none mono font-bold uppercase"
+                          style={{ color: couponApplied ? '#4ade80' : '#fbbf24' }} />
+                        <button type="button" onClick={handleApplyCoupon} disabled={couponApplied}
+                          className="rounded-lg px-3 py-1 text-xs font-bold flex-shrink-0"
+                          style={{ background: couponApplied ? 'rgba(34,197,94,0.2)' : 'rgba(251,191,36,0.2)', color: couponApplied ? '#4ade80' : '#fbbf24', border:`1px solid ${couponApplied ? 'rgba(34,197,94,0.4)' : 'rgba(251,191,36,0.4)'}` }}>
+                          {couponApplied ? '✓' : s.couponApply}
+                        </button>
+                      </div>
+                      {couponApplied && couponDiscount > 0 && (
+                        <p className="text-xs mt-1" style={{ color:'#4ade80' }}>{s.couponSuccess(Math.round(couponDiscount * 100))}</p>
+                      )}
+                    </div>
+
+                    <div className="rounded-xl px-3 py-2.5 mb-4" style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)' }}>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-xs font-semibold uppercase tracking-widest" style={{ color:'rgba(254,243,199,0.55)' }}>{s.message}</label>
+                        <span className="text-xs tabular-nums" style={{ color:message.length > 72 ? 'var(--danger)' : 'rgba(254,243,199,0.4)' }}>{message.length}/80</span>
+                      </div>
+                      <textarea maxLength={80} rows={2} placeholder={s.messagePlaceholder} value={message} onChange={(e) => setMessage(e.target.value)} className="w-full bg-transparent text-sm outline-none resize-none" style={{ color:'#fef3c7' }} />
+                    </div>
+
+                    {isBusy && (
+                      <div className="mb-3 space-y-1.5">
+                        <p className="text-xs text-center" style={{ color:'var(--muted)' }}>{step === 'tipping' ? s.sendingTip : s.txPendingTip}</p>
+                        {pendingHash && (
+                          <a href={buildTxExplorerUrl(ARC_TESTNET_CHAIN_ID, pendingHash)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1 text-xs" style={{ color:'var(--accent-hover)' }}>
+                            <span className="mono">{formatAddress(pendingHash)}</span><ExternalLink size={10} />
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    {!isConnected ? (
+                      <ConnectButton.Custom>
+                        {({ openConnectModal }) => (
+                          <button onClick={openConnectModal}
+                            className="w-full rounded-xl py-3.5 text-sm font-bold flex items-center justify-center gap-2"
+                            style={{ background:'var(--accent)',color:'#fff' }}>
+                            <Heart size={15} />{lang === 'hi' ? '💳 वॉलेट जोड़ें — पेमेंट करें' : '💳 Connect Wallet — Pay with USDC'}
+                          </button>
+                        )}
+                      </ConnectButton.Custom>
+                    ) : isWrongChain ? (
+                      <button onClick={() => { void handleSwitchToArc() }} className="w-full rounded-xl py-3.5 text-sm font-bold" style={{ background:'var(--danger)',color:'#fff' }}>{s.switchNetwork}</button>
+                    ) : isBusy ? (
+                      <button disabled className="w-full rounded-xl py-3.5 text-sm font-bold flex items-center justify-center gap-2" style={{ background:'rgba(18,45,69,0.5)',color:'#fff',cursor:'not-allowed' }}>
+                        <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />{s.sendingTip}
+                      </button>
+                    ) : (
+                      <button onClick={() => { speak(s.sendTip(tipAmount || '0')); void handleOpenSummary() }}
+                        className="w-full rounded-xl py-3.5 text-sm font-bold flex items-center justify-center gap-2"
+                        style={{ background:'var(--accent)',color:'#fff' }}>
+                        <Heart size={15} />{s.sendTip(tipAmount || '0')}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4 order-3 lg:order-3">
+                <div className="rounded-2xl p-5 lg:sticky lg:top-4 overflow-hidden" style={{ background:'#fffbf0', border:'3px solid #dc2626', boxShadow:'4px 4px 0 #b45309, 0 8px 32px rgba(220,38,38,0.15)' }}>
+                  <div className="flex items-center justify-between mb-1 pb-2" style={{ borderBottom:'2px dashed #dc2626' }}>
+                    <div className="flex items-center gap-2">
+                      <ShoppingCart size={17} style={{ color:'#dc2626',flexShrink:0 }} />
+                      <p className="display text-base font-black tracking-wide" style={{ color:'#7f1d1d' }}>{lang === 'hi' ? '🎫 ऑर्डर टिकट' : '🎫 ORDER TICKET'}</p>
+                    </div>
+                    <span className="text-[10px] font-black uppercase" style={{ color:'#dc2626' }}>USDC PAY</span>
+                  </div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color:'rgba(127,29,29,0.5)' }}>{lang === 'hi' ? 'चाय का चंदा • स्मार्ट स्टॉल' : 'CHAI KA CHANDA • SMART STALL'}</p>
+                  {!hasItems ? (
+                    <div className="text-center py-6">
+                      <p className="text-sm" style={{ color:'var(--muted)' }}>{s.cartEmpty}</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-2 mb-4">
+                        {MENU_ITEMS.filter((i) => (cart[i.key] ?? 0) > 0).map((item) => {
+                          const qty = cart[item.key] ?? 0
+                          const lineTotal = (qty * parseFloat(item.amount)).toFixed(2)
+                          return (
+                            <div key={item.key} className="flex items-center justify-between py-2" style={{ borderBottom:'1px solid rgba(0,0,0,0.05)' }}>
+                              <div className="flex items-center gap-2">
+                                <span>{item.emoji}</span>
+                                <div>
+                                  <p className="text-xs font-semibold" style={{ color:'var(--ink)' }}>{getMenuLabel(item.key, s)}</p>
+                                  <p className="text-xs tabular-nums" style={{ color:'var(--subtle)' }}>{qty} × {item.price}</p>
+                                </div>
+                              </div>
+                              <span className="text-sm font-bold tabular-nums" style={{ color:'var(--accent)' }}>{lineTotal}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                      <div className="rounded-xl px-3 py-2.5 mb-3" style={{ background:'rgba(220,38,38,0.08)', border:'1.5px dashed #dc2626' }}>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-black" style={{ color:'#7f1d1d' }}>{s.cartTotal}</span>
+                          <div className="flex items-center gap-1">
+                            <TokenUSDC variant="branded" size={15} />
+                            <span className="text-lg font-black tabular-nums flex items-center gap-1" style={{ color:'#dc2626' }}>{totalStr} <UsdcIcon size={16} /> USDC</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="rounded-xl px-3 py-2 mb-3" style={{ background:'rgba(0,0,0,0.03)',border:'1px solid rgba(0,0,0,0.06)' }}>
+                        <div className="flex items-center gap-1.5">
+                          {fulfillment === 'delivery' ? <Bike size={13} style={{ color:'var(--muted)' }} /> : <UtensilsCrossed size={13} style={{ color:'var(--muted)' }} />}
+                          <span className="text-xs" style={{ color:'var(--muted)' }}>{fulfillment === 'delivery' ? s.fulfillmentDelivery : s.fulfillmentDineIn}</span>
+                        </div>
+                      </div>
+                      {step !== 'summary' && step !== 'done' && (
+                        !isConnected ? (
+                          <ConnectButton.Custom>
+                            {({ openConnectModal }) => (
+                              <button onClick={openConnectModal}
+                                className="w-full rounded-xl py-3.5 text-sm font-bold flex items-center justify-center gap-2"
+                                style={{ background:'var(--accent)',color:'#fff' }}>
+                                <Heart size={15} />{lang === 'hi' ? '💳 जोड़ें और पेमेंट करें' : '💳 Connect & Pay with USDC'}
+                              </button>
+                            )}
+                          </ConnectButton.Custom>
+                        ) : (
+                          <button
+                            onClick={() => { speak(s.cartPlaceOrder); void handleOpenSummary() }}
+                            disabled={isBusy || isWrongChain}
+                            className="w-full rounded-xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                            style={isBusy || isWrongChain ? { background:'rgba(18,45,69,0.3)',color:'rgba(255,255,255,0.6)',cursor:'not-allowed' } : { background:'var(--accent)',color:'#fff' }}>
+                            <Heart size={15} />{s.cartPlaceOrder} — {totalStr} USDC
+                          </button>
+                        )
+                      )}
+                    </>
+                  )}
+                </div>
+
+                <div className="rounded-2xl p-5 hidden lg:block" style={{ background:'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(239,68,68,0.08))',border:'1px solid rgba(245,158,11,0.25)' }}>
+                  <p className="text-sm font-bold mb-2" style={{ color:'#92400e' }}>{lang === 'hi' ? "✨ आज का स्पेशल" : "✨ Today's Special"}</p>
+                  <p className="text-xs mb-1" style={{ color:'#78350f' }}>🍵🥟 {lang === 'hi' ? 'कॉम्बो ऑफर — 1.50 USDC' : 'Combo Offer — 1.50 USDC'}</p>
+                  <p className="text-xs mb-1" style={{ color:'#78350f' }}>🏺 {lang === 'hi' ? 'कुल्हड़ स्पेशल — 2.50 USDC' : 'Kulhad Special — 2.50 USDC'}</p>
+                  <p className="text-xs mt-3 font-semibold" style={{ color:'#92400e' }}>{lang === 'hi' ? '🌸 ताज़ी इलायची चाय हर घंटे' : '🌸 Fresh elaichi chai every hour'}</p>
+                </div>
+              </div>
+
+            </div>
+
+          <p className="text-center text-xs mt-6 mb-20 sm:mb-6" style={{ color:'var(--subtle)' }}>
+            <a href={`${arcChain.explorerBase}/address/${TIPJAR.address}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:underline">
+              <ArrowDownToLine size={11} />{s.contractLink}
+            </a>
+          </p>
+        </div>
+      </div>
+
+      {hasItems && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden" style={{ background:'#fffbf0', borderTop:'2px solid #dc2626', boxShadow:'0 -4px 24px rgba(220,38,38,0.18)' }}>
+          <div className="max-w-7xl mx-auto px-3 sm:px-5 py-2.5 flex items-center gap-3">
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <span className="text-base">🧾</span>
+              <div className="min-w-0">
+                <p className="text-xs font-black truncate" style={{ color:'#7f1d1d' }}>
+                  {totalItems} {lang === 'hi' ? 'आइटम' : totalItems === 1 ? 'item' : 'items'}
+                </p>
+                <p className="text-xs font-semibold tabular-nums" style={{ color:'#dc2626' }}>{totalStr} USDC</p>
+              </div>
+            </div>
+            {isConnected ? (
+              isWrongChain ? (
+                <button onClick={() => { void handleSwitchToArc() }}
+                  className="flex-shrink-0 rounded-xl px-4 py-2 text-sm font-black"
+                  style={{ background:'#dc2626', color:'#fff' }}>
+                  {s.switchNetwork}
+                </button>
+              ) : (
+                <button onClick={() => { void handleOpenSummary() }} disabled={isBusy}
+                  className="flex-shrink-0 rounded-xl px-4 py-2 text-sm font-black flex items-center gap-1.5"
+                  style={{ background:'linear-gradient(135deg,#b45309,#dc2626)', color:'#fff', opacity: isBusy ? 0.6 : 1 }}>
+                  <ShoppingCart size={14} />{lang === 'hi' ? 'चेकआउट' : 'Checkout'}
+                </button>
+              )
+            ) : (
+              <ConnectButton.Custom>
+                {({ openConnectModal }) => (
+                  <button onClick={openConnectModal}
+                    className="flex-shrink-0 rounded-xl px-4 py-2 text-sm font-black"
+                    style={{ background:'linear-gradient(135deg,#b45309,#dc2626)', color:'#fff' }}>
+                    {lang === 'hi' ? '🔗 वॉलेट जोड़ें' : '🔗 Connect'}
+                  </button>
+                )}
+              </ConnectButton.Custom>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+export default function TipJarApp() {
+  return <ErrorBoundary><TipJarInner /></ErrorBoundary>
+}
