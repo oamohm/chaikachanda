@@ -36,15 +36,6 @@ import {
   Sparkles,
   Milk,
   Music,
-  Home,
-  ShieldCheck,
-  Globe,
-  Briefcase,
-  UserCheck,
-  Compass,
-  Package,
-  Award,
-  HelpCircle,
 } from 'lucide-react'
 import { requireChain, buildTxExplorerUrl } from '@/onchain-facts'
 import { Amount } from '@/onchain-money'
@@ -249,6 +240,7 @@ function DesiJukeboxWidget({ lang }: { lang: Lang }) {
         </button>
       </div>
 
+      {/* Official YouTube Embed Player adhering strictly to API and copyright policies */}
       {playing && (
         <div className="mt-3 overflow-hidden rounded-xl" style={{ height: 80 }}>
           <iframe
@@ -475,7 +467,9 @@ function GiftChaiModal({ lang, onClose, onGift }: { lang: Lang; onClose: () => v
 
 function TipJarInner() {
   const { address, isConnected, chainId } = useAccount()
+  const { error: connectError } = useConnect()
   const { data: walletClient } = useWalletClient()
+  const publicClient = usePublicClient()
   const { switchChain } = useSwitchChain()
 
   const { data: balanceData, refetch: refetchBalance } = useBalance({
@@ -498,8 +492,8 @@ function TipJarInner() {
 
   const [name, setName] = useState('')
   const [walletAddr, setWalletAddr] = useState('')
-  const [message] = useState('')
-  const [vibeTag] = useState<string | null>(null)
+  const [message, setMessage] = useState('')
+  const [vibeTag, setVibeTag] = useState<string | null>(null)
 
   const [step, setStep] = useState<'idle' | 'summary' | 'tipping' | 'pending-tip' | 'timed-out' | 'done'>('idle')
   const [pendingHash, setPendingHash] = useState<`0x${string}` | null>(null)
@@ -507,13 +501,16 @@ function TipJarInner() {
   const [showQr, setShowQr] = useState(false)
   const qrSupported = qrScanSupported()
   const [copied, setCopied] = useState(false)
-  const [, setUserBalanceDisplay] = useState<string | null>(null)
+  const [userBalanceDisplay, setUserBalanceDisplay] = useState<string | null>(null)
+  const [showMerchants, setShowMerchants] = useState(false)
   const [qrMerchant, setQrMerchant] = useState<Merchant | null>(null)
   const [showRegisterMerchant, setShowRegisterMerchant] = useState(false)
   const [showEmergency, setShowEmergency] = useState(false)
   const [showBaithak, setShowBaithak] = useState(false)
   const [showGiftChai, setShowGiftChai] = useState(false)
-  const [, setMerchants] = useState<Merchant[]>([])
+  const [merchants, setMerchants] = useState<Merchant[]>(MERCHANTS)
+  const [couponCode, setCouponCode] = useState('')
+  const [couponApplied, setCouponApplied] = useState(false)
   const [showNftPass, setShowNftPass] = useState(false)
   const [showRoyaltyConsole, setShowRoyaltyConsole] = useState(false)
   const [royaltyKey, setRoyaltyKey] = useState('')
@@ -521,7 +518,7 @@ function TipJarInner() {
     try { return localStorage.getItem('chayChanda_royaltyUnlocked') === 'true' } catch { return false }
   })
   const [royaltyKeyError, setRoyaltyKeyError] = useState(false)
-  const [freeChaiPool] = useState(0)
+  const [freeChaiPool, setFreeChaiPool] = useState(0)
 
   const [totalCollected, setTotalCollected] = useState<bigint | null>(null)
   const [tipsCount, setTipsCount] = useState<bigint | null>(null)
@@ -541,6 +538,8 @@ function TipJarInner() {
   useEffect(() => { refetchAllRef.current = refetchAll }, [refetchAll])
 
   const finalMessage = (vibeTag ? `${vibeTag} — ` : '') + (message.trim() || cartSummaryLine(cart, s, lang).slice(0, 60))
+  const finalMessageRef = useRef(finalMessage)
+  useEffect(() => { finalMessageRef.current = finalMessage }, [finalMessage])
 
   useEffect(() => {
     if (step !== 'pending-tip' || !pendingHash) return
@@ -634,7 +633,6 @@ function TipJarInner() {
   const formattedTotal = totalCollected != null ? formatNativeUsdc(totalCollected) : '0.00'
   const displayTotal = isConnected ? formattedTotal : '0.00'
   const displayTipCount = isConnected && tipsCount != null ? Number(tipsCount) : 0
-  const totalItems = Object.values(cart).reduce((a, b) => a + (b || 0), 0)
 
   return (
     <>
@@ -647,7 +645,7 @@ function TipJarInner() {
       {showGiftChai && <GiftChaiModal lang={lang} onClose={() => setShowGiftChai(false)} onGift={(to) => toast.success(`🎁 Gift sent to ${to}!`)} />}
       {qrMerchant && <MerchantQrModal merchant={qrMerchant} onClose={() => setQrMerchant(null)} closeLabel={s.merchantQrClose} title={s.merchantQrTitle} />}
 
-      <div className="relative min-h-dvh overflow-hidden text-amber-50 pb-20 sm:pb-12" style={{ background: 'linear-gradient(180deg, #18181b 0%, #09090b 100%)' }}>
+      <div className="relative min-h-dvh overflow-hidden text-amber-50" style={{ background: 'linear-gradient(180deg, #18181b 0%, #09090b 100%)' }}>
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 pt-6">
 
           <VillageBanner lang={lang} onNftClick={() => setShowNftPass(true)} onRoyaltyClick={() => setShowRoyaltyConsole(true)} onEmergencyClick={() => setShowEmergency(true)} onBaithakClick={() => setShowBaithak(true)} onGiftClick={() => setShowGiftChai(true)} freeChaiPool={freeChaiPool} onSelectMilk={() => adjustCart('milk', 1)} onSelectKulhad={() => adjustCart('kulhad', 1)} />
@@ -663,7 +661,7 @@ function TipJarInner() {
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex rounded-xl overflow-hidden text-xs font-bold border border-amber-500/30">
                 {(['hi','en'] as Lang[]).map((l) => (
-                  <button key={l} onClick={() => { setLangState(l); saveLang(l) }} className="px-3.5 py-2" style={lang === l ? { background:'#d97706',color:'#fff' } : { background:'rgba(255,255,255,0.05)',color:'#a3a3a3' }}>
+                  <button key={l} onClick={() => setLangState(l); saveLang(l)} className="px-3.5 py-2" style={lang === l ? { background:'#d97706',color:'#fff' } : { background:'rgba(255,255,255,0.05)',color:'#a3a3a3' }}>
                     {l === 'hi' ? 'हिन्दी' : 'English'}
                   </button>
                 ))}
@@ -841,27 +839,6 @@ function TipJarInner() {
               <ArrowDownToLine size={12} />{s.contractLink}
             </a>
           </p>
-        </div>
-
-        {/* 📱 Mobile Sticky Bottom Navigation Bar */}
-        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-stone-950/95 border-t border-amber-500/30 px-4 py-2 flex items-center justify-around backdrop-blur-md">
-          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex flex-col items-center gap-0.5 text-amber-400">
-            <Home size={18} />
-            <span className="text-[10px] font-bold">{lang === 'hi' ? 'होम' : 'Home'}</span>
-          </button>
-          <button onClick={() => { const el = document.getElementById('jukebox-section'); el?.scrollIntoView({ behavior: 'smooth' }) }} className="flex flex-col items-center gap-0.5 text-indigo-400">
-            <Music size={18} />
-            <span className="text-[10px] font-bold">{lang === 'hi' ? 'गाने' : 'Jukebox'}</span>
-          </button>
-          <button onClick={() => setShowQr(true)} className="flex flex-col items-center gap-0.5 text-amber-400">
-            <QrCode size={18} />
-            <span className="text-[10px] font-bold">{lang === 'hi' ? 'स्कैन' : 'Scan QR'}</span>
-          </button>
-          <button onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })} className="flex flex-col items-center gap-0.5 text-red-400 relative">
-            <ShoppingCart size={18} />
-            {totalItems > 0 && <span className="absolute -top-1 -right-2 w-4 h-4 rounded-full bg-red-600 text-white text-[9px] font-black flex items-center justify-center">{totalItems}</span>}
-            <span className="text-[10px] font-bold">{lang === 'hi' ? 'ऑर्डर' : 'Cart'}</span>
-          </button>
         </div>
       </div>
     </>
