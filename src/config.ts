@@ -1,29 +1,25 @@
-import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { http, createConfig } from 'wagmi'
+import { getDefaultConfig } from '@rainbow-me/rainbowkit'
 
-export const ARC_TESTNET_CHAIN_ID = 5042002;
-export const ARC_RPC = 'https://rpc.testnet.arc.io';
+export const ARC_TESTNET_CHAIN_ID = 5042002
 
 export const arcTestnet = {
   id: ARC_TESTNET_CHAIN_ID,
   name: 'Arc Testnet',
-  nativeCurrency: { 
-    name: 'USDC', 
-    symbol: 'USDC', 
-    decimals: 18 
-  },
+  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
   rpcUrls: {
-    default: { http: [ARC_RPC] },
-    public: { http: [ARC_RPC] },
+    default: { http: ['https://rpc.testnet.arc.io'] },
   },
   blockExplorers: {
     default: { name: 'ArcScan', url: 'https://explorer.testnet.arc.io' },
   },
-  testnet: true,
-} as const;
+} as const
 
-export const config = getDefaultConfig({
+export const wagmiConfig = getDefaultConfig({
   appName: 'Chai Ka Chanda',
-  projectId: 'a02844ca8436b1d4c2062f6bfa0f77bc',
+  projectId: 'a02844ca8436b1d4c2062f6bfa0f77bc', // वैध प्रोजेक्ट आईडी
   chains: [arcTestnet],
   ssr: false,
-});
+})
+
+export const config = wagmiConfig
