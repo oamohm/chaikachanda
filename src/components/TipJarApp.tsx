@@ -44,7 +44,6 @@ import { type Lang, strings, loadLang, saveLang } from '@/i18n'
 import { purgeWagmiCache } from '@/safe-storage'
 import { useSpeech } from '@/hooks/useSpeech'
 import QrScanner, { qrScanSupported } from './QrScanner'
-import { BizSwitcher, StarRating, ChaiExtras, BottomNav, BIZ_META, loadBiz, saveBiz, clipBytes, type BizKey } from './ChaiExtras'
 import tipJarArtifact from '../../contracts/out/TipJar.sol/TipJar.json'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -58,19 +57,10 @@ const ARC_RPC = 'https://rpc.testnet.arc.io'
 const arcViemChain = {
   id: ARC_TESTNET_CHAIN_ID,
   name: arcChain.name,
-  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
+  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: arcChain.nativeCurrency.decimals },
   rpcUrls: { default: { http: [ARC_RPC] } },
 } as const
-
-// Public Client with Retry and Timeout logic to eliminate Network Error Popups
-const arcPublicClient = createPublicClient({ 
-  chain: arcViemChain, 
-  transport: http(ARC_RPC, {
-    retryCount: 5,
-    retryDelay: 2000,
-    timeout: 10_000,
-  }) 
-})
+const arcPublicClient = createPublicClient({ chain: arcViemChain, transport: http(ARC_RPC) })
 
 const NATIVE_DECIMALS = 18
 const ERC20_DECIMALS = 6
@@ -91,14 +81,13 @@ function formatNativeUsdc(raw: bigint): string {
 
 // ── Menu ───────────────────────────────────────────────────────────────────────
 interface MenuItem {
-  key: string
-  label?: { hi: string; en: string }
+  key: 'chai' | 'kulhadChai' | 'masalaChai' | 'samosa' | 'kachori' | 'lassi' | 'aloo' | 'combo' | 'kulhad'
   emoji: string
   price: string
   amount: string
   badge?: 'bestseller' | 'hot' | 'organic' | 'offer' | 'new'
   splitTag?: true
-  color: string
+  color: string   // unique card accent color
   selectedBg: string
 }
 
@@ -114,37 +103,6 @@ const MENU_ITEMS: MenuItem[] = [
   { key: 'kulhad',     emoji: '🏺✨', price: '2.50 USDC', amount: '2.5',  color: '#d97706', selectedBg: 'rgba(217,119,6,0.15)' },
 ]
 
-// Other kinds of shops (same contract, only the menu changes)
-function mk(key: string, emoji: string, cents: number, hi: string, en: string, color: string): MenuItem {
-  const a = cents / 100
-  return { key, emoji, price: `${a.toFixed(2)} USDC`, amount: String(a), color, selectedBg: `${color}26`, label: { hi, en } }
-}
-const BUSINESS_MENUS: Record<BizKey, MenuItem[]> = {
-  chai: MENU_ITEMS,
-  store: [
-    mk('atta', '🌾', 150, 'आटा (1 किलो)', 'Atta (1 kg)', '#f59e0b'),
-    mk('rice', '🍚', 200, 'चावल (1 किलो)', 'Rice (1 kg)', '#10b981'),
-    mk('dal', '🫘', 180, 'दाल (500 ग्राम)', 'Dal (500 g)', '#ef4444'),
-    mk('oil', '🛢️', 300, 'तेल (1 लीटर)', 'Oil (1 L)', '#f97316'),
-    mk('milk', '🥛', 70, 'दूध (1 लीटर)', 'Milk (1 L)', '#14b8a6'),
-    mk('biscuit', '🍪', 40, 'बिस्कुट', 'Biscuits', '#8b5cf6'),
-  ],
-  freelancer: [
-    mk('review', '🔍', 200, 'कोड / डिज़ाइन रिव्यू', 'Code / design review', '#f59e0b'),
-    mk('call', '📞', 500, 'सलाह कॉल (30 मिनट)', 'Advice call (30 min)', '#10b981'),
-    mk('logo', '🎨', 1000, 'लोगो डिज़ाइन', 'Logo design', '#ec4899'),
-    mk('page', '🌐', 2500, 'लैंडिंग पेज', 'Landing page', '#6366f1'),
-    mk('coffee', '☕', 100, 'कॉफी पिलाइए', 'Buy me a coffee', '#d97706'),
-  ],
-  corporate: [
-    mk('consult', '📊', 1500, 'परामर्श सत्र', 'Consulting session', '#f59e0b'),
-    mk('audit', '🧾', 3000, 'ऑडिट रिपोर्ट', 'Audit report', '#ef4444'),
-    mk('train', '🎓', 2000, 'टीम ट्रेनिंग', 'Team training', '#10b981'),
-    mk('support', '🛠️', 1000, 'मासिक सपोर्ट', 'Monthly support', '#6366f1'),
-  ],
-}
-const ALL_ITEMS: MenuItem[] = [...BUSINESS_MENUS.chai, ...BUSINESS_MENUS.store, ...BUSINESS_MENUS.freelancer, ...BUSINESS_MENUS.corporate]
-
 const BADGE_STYLES: Record<NonNullable<MenuItem['badge']>, { bg: string; color: string; label: { hi: string; en: string } }> = {
   bestseller: { bg: 'rgba(251,191,36,0.18)', color: '#b45309', label: { hi: 'बेस्टसेलर', en: 'Bestseller' } },
   hot:        { bg: 'rgba(239,68,68,0.14)',  color: '#dc2626', label: { hi: 'गरमागरम',   en: 'Hot'        } },
@@ -154,8 +112,6 @@ const BADGE_STYLES: Record<NonNullable<MenuItem['badge']>, { bg: string; color: 
 }
 
 function getMenuLabel(key: MenuItem['key'], s: typeof strings['en']): string {
-  const extraItem = ALL_ITEMS.find((i) => i.key === key && i.label)
-  if (extraItem?.label) return extraItem.label[s === strings.hi ? 'hi' : 'en']
   if (key === 'chai')       return s.menuItemChai
   if (key === 'kulhadChai') return s.menuItemKulhadChai
   if (key === 'masalaChai') return s.menuItemMasalaChai
@@ -171,7 +127,7 @@ type CartMap = Partial<Record<MenuItem['key'], number>>
 
 function cartTotal(cart: CartMap): string {
   let sum = 0
-  for (const item of ALL_ITEMS) {
+  for (const item of MENU_ITEMS) {
     const qty = cart[item.key] ?? 0
     if (qty > 0) sum += qty * parseFloat(item.amount)
   }
@@ -179,12 +135,13 @@ function cartTotal(cart: CartMap): string {
 }
 
 function cartSummaryLine(cart: CartMap, s: typeof strings['en']): string {
-  return ALL_ITEMS
+  return MENU_ITEMS
     .filter((i) => (cart[i.key] ?? 0) > 0)
     .map((i) => `${getMenuLabel(i.key, s)} ×${cart[i.key] ?? 0}`)
     .join(', ')
 }
 
+// ── Merchant Directory ─────────────────────────────────────────────────────────
 interface Merchant {
   name: string; handle: string; emoji: string
   address: `0x${string}`; defaultAmount: string
@@ -196,12 +153,14 @@ const MERCHANTS: Merchant[] = [
   { name: 'Priya Chai Corner', handle: '@priya_corner',  emoji: '🍵', address: '0xDeAdBeEf1234567890DeAdBeEf1234567890DeAd', defaultAmount: '1.5' },
 ]
 
+// ── Vibe Tags ──────────────────────────────────────────────────────────────────
 const VIBE_COLORS = [
   'rgba(245,158,11,0.12)', 'rgba(239,68,68,0.12)',
   'rgba(251,191,36,0.12)', 'rgba(99,102,241,0.12)', 'rgba(168,85,247,0.12)',
 ]
 const VIBE_TEXT_COLORS = ['#d97706','#dc2626','#b45309','#6366f1','#9333ea']
 
+// ── Types ──────────────────────────────────────────────────────────────────────
 type TipStep = 'idle' | 'summary' | 'tipping' | 'pending-tip' | 'timed-out' | 'done'
 type Fulfillment = 'delivery' | 'dine-in'
 
@@ -214,6 +173,7 @@ interface MyOrder {
   timestamp: number
 }
 
+// ── Helpers ────────────────────────────────────────────────────────────────────
 function formatAddress(addr: string): string {
   if (!addr || addr.length < 10) return addr
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`
@@ -236,6 +196,7 @@ function parseOnchainError(error: unknown, lang: Lang): string {
   return s.errDefault
 }
 
+// ── Styles ─────────────────────────────────────────────────────────────────────
 const glass = {
   card: {
     background: '#fffaf3',
@@ -246,9 +207,30 @@ const glass = {
     background: 'rgba(255,245,225,0.7)',
     border: '1px solid rgba(245,158,11,0.22)',
   } as React.CSSProperties,
+  mint: {
+    background: '#f0fdf4',
+    border: '1.5px solid rgba(22,163,74,0.30)',
+    boxShadow: '0 4px 20px rgba(22,163,74,0.10)',
+  } as React.CSSProperties,
+  indigo: {
+    background: '#faf5ff',
+    border: '1.5px solid rgba(99,102,241,0.28)',
+    boxShadow: '0 4px 20px rgba(99,102,241,0.10)',
+  } as React.CSSProperties,
+  amber: {
+    background: '#fffbeb',
+    border: '1.5px solid rgba(245,158,11,0.35)',
+    boxShadow: '0 4px 20px rgba(245,158,11,0.12)',
+  } as React.CSSProperties,
+  dark: {
+    background: 'rgba(40,21,12,0.97)',
+    border: '1.5px solid rgba(245,158,11,0.35)',
+    boxShadow: '0 6px 32px rgba(0,0,0,0.35)',
+  } as React.CSSProperties,
 }
 const spectral = 'linear-gradient(90deg, #5fbeff, #af8ff4, #f05c6b, #ffcd83, #7ef1b3)'
 
+// ── Merchant QR Modal ──────────────────────────────────────────────────────────
 function MerchantQrModal({ merchant, onClose, closeLabel, title }: {
   merchant: Merchant; onClose: () => void; closeLabel: string; title: string
 }) {
@@ -259,7 +241,7 @@ function MerchantQrModal({ merchant, onClose, closeLabel, title }: {
     import('qrcode').then((QRCode) => {
       if (!canvasRef.current) return
       void QRCode.toCanvas(canvasRef.current, qrValue, { width: 200, margin: 2, color: { dark: '#122D45', light: '#FFFFFF' } })
-    }).catch(() => {})
+    }).catch(() => { /* qrcode unavailable */ })
   }, [qrValue])
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
@@ -274,6 +256,7 @@ function MerchantQrModal({ merchant, onClose, closeLabel, title }: {
   )
 }
 
+// ── Order Receipt Card ─────────────────────────────────────────────────────────
 function OrderReceiptCard({ order, lang, onNewOrder }: { order: MyOrder; lang: Lang; onNewOrder: () => void }) {
   const s = strings[lang]
   const [statusIdx, setStatusIdx] = useState(0)
@@ -315,11 +298,14 @@ function OrderReceiptCard({ order, lang, onNewOrder }: { order: MyOrder; lang: L
           </span>
         </div>
       </div>
+      {/* Status stepper */}
       <div className="rounded-xl p-3 mb-4" style={{ background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.2)' }}>
         {statusLabels.map((label, i) => (
           <div key={i} className="flex items-center gap-2 py-1">
             <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
-              style={i <= statusIdx ? { background: 'var(--success)', color: '#fff' } : { background: 'rgba(0,0,0,0.07)', color: 'var(--subtle)' }}>
+              style={i <= statusIdx
+                ? { background: 'var(--success)', color: '#fff' }
+                : { background: 'rgba(0,0,0,0.07)', color: 'var(--subtle)' }}>
               {i <= statusIdx ? '✓' : i + 1}
             </div>
             <span className="text-xs" style={{ color: i <= statusIdx ? 'var(--ink)' : 'var(--subtle)', fontWeight: i === statusIdx ? 700 : 400 }}>
@@ -328,13 +314,16 @@ function OrderReceiptCard({ order, lang, onNewOrder }: { order: MyOrder; lang: L
           </div>
         ))}
       </div>
-      <button onClick={onNewOrder} className="w-full rounded-xl py-3 text-sm font-semibold transition-all" style={{ background: 'var(--surface-muted)', color: 'var(--ink-2)' }}>
+      <button onClick={onNewOrder}
+        className="w-full rounded-xl py-3 text-sm font-semibold transition-all"
+        style={{ background: 'var(--surface-muted)', color: 'var(--ink-2)' }}>
         {s.receiptNewOrder}
       </button>
     </div>
   )
 }
 
+// ── Chai Philosophy Card ───────────────────────────────────────────────────────
 const CHAI_QUOTES = {
   hi: [
     '"चाय पीओ, दुनिया को समझो।"',
@@ -370,6 +359,7 @@ function ChaiPhilosophyCard({ lang }: { lang: Lang }) {
   )
 }
 
+// ── USDC Icon ─────────────────────────────────────────────────────────────────
 function UsdcIcon({ size = 14 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"
@@ -381,6 +371,8 @@ function UsdcIcon({ size = 14 }: { size?: number }) {
   )
 }
 
+// ── Retro FM Radio Widget ──────────────────────────────────────────────────────
+// Royalty-free lofi tracks (Internet Archive, CC0/Public Domain)
 const LOFI_TRACKS = [
   { title: 'Arc Lo-Fi Chill', artist: 'Chill Vibes', src: 'https://cdn.pixabay.com/audio/2022/10/31/audio_b5a1d5f9d5.mp3' },
   { title: 'Circle USDC Beats', artist: 'Ambient India', src: 'https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73467.mp3' },
@@ -395,18 +387,25 @@ function FmRadioWidget({ lang }: { lang: Lang }) {
   const [muted, setMuted] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
 
+  // Sync play/pause with audio element
   useEffect(() => {
     const el = audioRef.current
     if (!el) return
-    if (playing) { el.play().catch(() => setPlaying(false)) } else { el.pause() }
+    if (playing) {
+      el.play().catch(() => setPlaying(false)) // browsers may block autoplay
+    } else {
+      el.pause()
+    }
   }, [playing])
 
+  // Sync volume and mute
   useEffect(() => {
     const el = audioRef.current
     if (!el) return
     el.volume = muted ? 0 : volume
   }, [volume, muted])
 
+  // Sync track source
   useEffect(() => {
     const el = audioRef.current
     if (!el) return
@@ -417,12 +416,14 @@ function FmRadioWidget({ lang }: { lang: Lang }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trackIdx])
 
+  // Equalizer animation when playing
   useEffect(() => {
     if (!playing) return
     const t = setInterval(() => setBeat((b) => (b + 1) % 4), 400)
     return () => clearInterval(t)
   }, [playing])
 
+  // Auto-advance track every 20s
   useEffect(() => {
     if (!playing) return
     const t = setInterval(() => setTrackIdx((i) => (i + 1) % LOFI_TRACKS.length), 20_000)
@@ -433,7 +434,9 @@ function FmRadioWidget({ lang }: { lang: Lang }) {
 
   return (
     <div className="rounded-2xl p-4" style={{ background:'linear-gradient(135deg,#1e1b4b,#312e81)', border:'2px solid rgba(99,102,241,0.35)', boxShadow:'0 4px 20px rgba(99,102,241,0.2)' }}>
+      {/* Hidden HTML5 audio element */}
       <audio ref={audioRef} src={LOFI_TRACKS[trackIdx].src} preload="none" loop />
+
       <div className="flex items-center gap-2 mb-2">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background:'rgba(99,102,241,0.3)' }}>
           <span className="text-lg">📻</span>
@@ -442,6 +445,7 @@ function FmRadioWidget({ lang }: { lang: Lang }) {
           <p className="text-xs font-black" style={{ color:'#c7d2fe' }}>{lang === 'hi' ? 'देसी FM 92.7' : 'Desi FM 92.7'}</p>
           <p className="text-[10px]" style={{ color:'rgba(199,210,254,0.6)' }}>{lang === 'hi' ? 'लो-फाई चाय बीट्स' : 'Lo-Fi Chai Beats'}</p>
         </div>
+        {/* Equalizer bars */}
         <div className="flex items-end gap-0.5 h-5 flex-shrink-0">
           {[3,5,4,2,5,3,4].map((h, i) => (
             <div key={i} className="w-1 rounded-full transition-all duration-200"
@@ -449,10 +453,14 @@ function FmRadioWidget({ lang }: { lang: Lang }) {
           ))}
         </div>
       </div>
+
+      {/* Track info */}
       <div className="rounded-lg px-2 py-1.5 mb-2 overflow-hidden" style={{ background:'rgba(0,0,0,0.3)' }}>
         <p className="text-xs font-semibold truncate" style={{ color:'#e0e7ff' }}>{track.title}</p>
         <p className="text-[10px] truncate" style={{ color:'rgba(224,231,255,0.6)' }}>{track.artist}</p>
       </div>
+
+      {/* Play/Pause + Mute row */}
       <div className="flex gap-2 mb-2">
         <button onClick={() => setPlaying((p) => !p)}
           className="flex-1 rounded-lg py-2 text-xs font-bold transition-all flex items-center justify-center gap-1.5"
@@ -462,10 +470,13 @@ function FmRadioWidget({ lang }: { lang: Lang }) {
         </button>
         <button onClick={() => setMuted((m) => !m)}
           className="w-9 rounded-lg flex items-center justify-center text-sm transition-all"
-          style={{ background:'rgba(99,102,241,0.2)', color: muted ? '#f87171' : '#a5b4fc' }}>
+          style={{ background:'rgba(99,102,241,0.2)', color: muted ? '#f87171' : '#a5b4fc' }}
+          title={muted ? 'Unmute' : 'Mute'}>
           {muted ? '🔇' : '🔊'}
         </button>
       </div>
+
+      {/* Track selector */}
       <div className="flex gap-1 mb-2">
         {LOFI_TRACKS.map((t, i) => (
           <button key={i} onClick={() => setTrackIdx(i)}
@@ -475,19 +486,70 @@ function FmRadioWidget({ lang }: { lang: Lang }) {
           </button>
         ))}
       </div>
+
+      {/* Volume slider */}
       <div className="flex items-center gap-2">
         <span className="text-[10px]" style={{ color:'rgba(199,210,254,0.5)' }}>🔈</span>
         <input type="range" min={0} max={1} step={0.05} value={muted ? 0 : volume}
           onChange={(e) => { setVolume(parseFloat(e.target.value)); setMuted(false) }}
-          className="flex-1 h-1 rounded-full cursor-pointer" style={{ accentColor:'#818cf8' }} />
+          className="flex-1 h-1 rounded-full cursor-pointer"
+          style={{ accentColor:'#818cf8' }} />
         <span className="text-[10px]" style={{ color:'rgba(199,210,254,0.5)' }}>🔉</span>
       </div>
     </div>
   )
 }
 
+// ── Kulhad NFT Loyalty Pass ────────────────────────────────────────────────
+function _KulhadNftPassCard({ orderCount, lang }: { orderCount: number; lang: Lang }) {
+  const threshold = 5
+  const progress = Math.min(orderCount, threshold)
+  const unlocked = orderCount >= threshold
+  return (
+    <div className="rounded-2xl p-4 overflow-hidden relative" style={{
+      background: unlocked
+        ? 'linear-gradient(135deg,#1e3a6e,#0d5c5c,#7c3aed)'
+        : 'linear-gradient(135deg,#1c1917,#292524)',
+      border: `2px solid ${unlocked ? 'rgba(167,139,250,0.7)' : 'rgba(251,191,36,0.25)'}`,
+      boxShadow: unlocked ? '0 4px 24px rgba(139,92,246,0.35)' : '0 2px 12px rgba(0,0,0,0.2)',
+    }}>
+      <div className="flex items-start gap-3">
+        <span className="text-3xl flex-shrink-0">{unlocked ? '🏺✨' : '🏺'}</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-black leading-tight" style={{ color: unlocked ? '#e9d5ff' : '#fef3c7' }}>
+            {lang === 'hi' ? 'कुल्हड़ NFT लॉयल्टी पास' : 'Kulhad NFT Loyalty Pass'}
+          </p>
+          <p className="text-[10px] mt-0.5" style={{ color: unlocked ? 'rgba(233,213,255,0.65)' : 'rgba(254,243,199,0.5)' }}>
+            {unlocked
+              ? (lang === 'hi' ? '🎉 अनलॉक! आप VIP चाय सदस्य हैं' : '🎉 Unlocked! You are a VIP Chai Member')
+              : (lang === 'hi' ? `${threshold - progress} और ऑर्डर बाकी` : `${threshold - progress} more orders to unlock`)}
+          </p>
+          {/* Progress bar */}
+          <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.12)' }}>
+            <div className="h-full rounded-full transition-all duration-700"
+              style={{ width: `${(progress / threshold) * 100}%`, background: unlocked ? 'linear-gradient(90deg,#a78bfa,#34d399)' : 'linear-gradient(90deg,#fbbf24,#f59e0b)' }} />
+          </div>
+          <p className="text-[10px] mt-1 tabular-nums" style={{ color: unlocked ? 'rgba(233,213,255,0.6)' : 'rgba(254,243,199,0.4)' }}>
+            {progress}/{threshold} {lang === 'hi' ? 'ऑर्डर' : 'orders'}
+          </p>
+        </div>
+      </div>
+      {unlocked && (
+        <div className="mt-3 rounded-lg px-3 py-2 text-center" style={{ background: 'rgba(139,92,246,0.25)', border: '1px solid rgba(167,139,250,0.4)' }}>
+          <p className="text-xs font-bold" style={{ color: '#ddd6fe' }}>
+            {lang === 'hi' ? '🎁 फ्री कुल्हड़ चाय — अगले ऑर्डर पर' : '🎁 Free Kulhad Chai on your next order!'}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Register Merchant Modal ────────────────────────────────────────────────
 function RegisterMerchantModal({ onClose, onRegister, lang }: {
-  onClose: () => void; onRegister: (m: Merchant) => void; lang: Lang
+  onClose: () => void
+  onRegister: (m: Merchant) => void
+  lang: Lang
 }) {
   const [rName, setRName] = useState('')
   const [rHandle, setRHandle] = useState('')
@@ -542,6 +604,7 @@ function RegisterMerchantModal({ onClose, onRegister, lang }: {
   )
 }
 
+// ── Kulhad NFT Loyalty Pass Modal ──────────────────────────────────────────────
 function KulhadNftModal({ lang, onClose }: { lang: Lang; onClose: () => void }) {
   const s = strings[lang]
   const [claimed, setClaimed] = useState(false)
@@ -572,8 +635,12 @@ function KulhadNftModal({ lang, onClose }: { lang: Lang; onClose: () => void }) 
   )
 }
 
+// ── Master Key Royalty Console ──────────────────────────────────────────────────
 function RoyaltyConsole({ lang, onClose, royaltyKey, setRoyaltyKey, royaltyUnlocked, royaltyKeyError, onUnlock, displayTotal, displayTipCount }: {
-  lang: Lang; onClose: () => void; royaltyKey: string; setRoyaltyKey: (v: string) => void; royaltyUnlocked: boolean; royaltyKeyError: boolean; onUnlock: () => void; displayTotal: string; displayTipCount: number
+  lang: Lang; onClose: () => void
+  royaltyKey: string; setRoyaltyKey: (v: string) => void
+  royaltyUnlocked: boolean; royaltyKeyError: boolean
+  onUnlock: () => void; displayTotal: string; displayTipCount: number
 }) {
   const s = strings[lang]
   return (
@@ -623,28 +690,44 @@ function RoyaltyConsole({ lang, onClose, royaltyKey, setRoyaltyKey, royaltyUnloc
   )
 }
 
-function VillageBanner({ lang, onNftClick, onRoyaltyClick, onEmergencyClick, onBaithakClick, onGiftClick, freeChaiPool }: {
-  lang: Lang; onNftClick: () => void; onRoyaltyClick: () => void; onEmergencyClick: () => void; onBaithakClick: () => void; onGiftClick: () => void; freeChaiPool: number
-}) {
+// ── Village 3D Banner ──────────────────────────────────────────────────────────
+function VillageBanner({ lang, onNftClick, onRoyaltyClick, onEmergencyClick, onBaithakClick, onGiftClick, freeChaiPool }: { lang: Lang; onNftClick: () => void; onRoyaltyClick: () => void; onEmergencyClick: () => void; onBaithakClick: () => void; onGiftClick: () => void; freeChaiPool: number }) {
   const s = strings[lang]
   return (
     <div className="relative mb-4 rounded-2xl overflow-hidden" style={{
       background: 'linear-gradient(135deg,#7c2d12 0%,#9a3412 15%,#b45309 32%,#92400e 50%,#78350f 68%,#6b2d0f 82%,#431407 100%)',
       boxShadow: '0 12px 40px rgba(120,53,15,0.5), inset 0 1px 0 rgba(251,191,36,0.2)', minHeight: 148,
     }}>
+      {/* Kalamkari-inspired SVG texture overlay */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.08 }} preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <pattern id="kalam" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+            <circle cx="20" cy="20" r="8" fill="none" stroke="#fbbf24" strokeWidth="0.8"/>
+            <path d="M20 12 C24 16 24 24 20 28 C16 24 16 16 20 12Z" fill="none" stroke="#fbbf24" strokeWidth="0.6"/>
+            <circle cx="20" cy="20" r="2" fill="#fbbf24"/>
+            <path d="M12 20 Q16 16 20 20 Q24 16 28 20" fill="none" stroke="#fbbf24" strokeWidth="0.5"/>
+            <path d="M12 20 Q16 24 20 20 Q24 24 28 20" fill="none" stroke="#fbbf24" strokeWidth="0.5"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#kalam)"/>
+      </svg>
+      {/* Marigold garland */}
       <div className="absolute top-0 left-0 right-0 flex justify-center py-1 gap-0.5 flex-wrap z-10">
         {Array.from({ length: 28 }).map((_, i) => (
           <span key={i} style={{ fontSize: 10, opacity: 0.95 }}>{i % 3 === 0 ? '🌸' : '🌼'}</span>
         ))}
       </div>
+      {/* Village scene */}
       <div className="absolute bottom-0 left-0 right-0 flex items-end justify-around px-4 pb-1">
-        <span style={{ fontSize: 28 }}>🏡</span>
-        <span style={{ fontSize: 24 }}>☕</span>
-        <span style={{ fontSize: 24 }}>🥟</span>
-        <span style={{ fontSize: 28 }}>⛩️</span>
-        <span style={{ fontSize: 24 }}>🌴</span>
+        <span style={{ fontSize: 28 }} title="Chai Stall">🏡</span>
+        <span style={{ fontSize: 24 }} title="Chai">☕</span>
+        <span style={{ fontSize: 24 }} title="Samosa">🥟</span>
+        <span style={{ fontSize: 28 }} title="Temple">⛩️</span>
+        <span style={{ fontSize: 24 }} title="Tree">🌴</span>
       </div>
+      {/* Main content */}
       <div className="relative z-10 px-5 pt-7 pb-3 flex flex-col items-center">
+        {/* 3D embossed clay-like title */}
         <p className="font-black text-2xl tracking-wide text-center" style={{
           color: '#fef3c7',
           textShadow: '0 1px 0 #431407, 0 2px 0 #3d1106, 0 3px 0 #361005, 0 4px 8px rgba(0,0,0,0.5), 0 0 20px rgba(251,191,36,0.3)',
@@ -656,22 +739,52 @@ function VillageBanner({ lang, onNftClick, onRoyaltyClick, onEmergencyClick, onB
           {s.appName} • Indian Railways Platform No. 1
         </p>
         <div className="flex gap-2 mt-2 flex-wrap justify-center">
-          <button onClick={onNftClick} className="rounded-full px-3 py-1 text-xs font-bold transition-transform hover:scale-105" style={{ background: 'rgba(99,102,241,0.75)', color: '#e9d5ff', border: '1px solid rgba(167,139,250,0.4)' }}>🏺 NFT Pass</button>
-          <button onClick={onRoyaltyClick} className="rounded-full px-3 py-1 text-xs font-bold transition-transform hover:scale-105" style={{ background: 'rgba(217,119,6,0.75)', color: '#fef9c3', border: '1px solid rgba(251,191,36,0.4)' }}>🔑 Master Key</button>
-          <a href={FAUCET_URL} target="_blank" rel="noopener noreferrer" className="rounded-full px-3 py-1 text-xs font-bold transition-transform hover:scale-105" style={{ background: 'rgba(20,184,166,0.75)', color: '#f0fdfa', border: '1px solid rgba(45,212,191,0.4)', textDecoration: 'none' }}>💧 Faucet</a>
-          <button onClick={onEmergencyClick} className="rounded-full px-3 py-1 text-xs font-bold transition-transform hover:scale-105" style={{ background: 'rgba(220,38,38,0.75)', color: '#fee2e2', border: '1px solid rgba(252,165,165,0.4)' }}>🚨 Emergency</button>
-          <button onClick={onBaithakClick} className="rounded-full px-3 py-1 text-xs font-bold transition-transform hover:scale-105" style={{ background: 'rgba(5,150,105,0.75)', color: '#d1fae5', border: '1px solid rgba(52,211,153,0.4)' }}>🪑 बैठक बुक</button>
-          <button onClick={onGiftClick} className="rounded-full px-3 py-1 text-xs font-bold transition-transform hover:scale-105" style={{ background: 'rgba(180,83,9,0.75)', color: '#fef3c7', border: '1px solid rgba(251,191,36,0.4)' }}>🎁 Gift Chai</button>
+          <button onClick={onNftClick}
+            className="rounded-full px-3 py-1 text-xs font-bold transition-transform hover:scale-105"
+            style={{ background: 'rgba(99,102,241,0.75)', color: '#e9d5ff', border: '1px solid rgba(167,139,250,0.4)' }}>
+            🏺 NFT Pass
+          </button>
+          <button onClick={onRoyaltyClick}
+            className="rounded-full px-3 py-1 text-xs font-bold transition-transform hover:scale-105"
+            style={{ background: 'rgba(217,119,6,0.75)', color: '#fef9c3', border: '1px solid rgba(251,191,36,0.4)' }}>
+            🔑 Master Key
+          </button>
+          <a href={FAUCET_URL} target="_blank" rel="noopener noreferrer"
+            className="rounded-full px-3 py-1 text-xs font-bold transition-transform hover:scale-105"
+            style={{ background: 'rgba(20,184,166,0.75)', color: '#f0fdfa', border: '1px solid rgba(45,212,191,0.4)', textDecoration: 'none' }}>
+            💧 Faucet
+          </a>
+          <button onClick={onEmergencyClick}
+            className="rounded-full px-3 py-1 text-xs font-bold transition-transform hover:scale-105"
+            style={{ background: 'rgba(220,38,38,0.75)', color: '#fee2e2', border: '1px solid rgba(252,165,165,0.4)' }}>
+            🚨 Emergency
+          </button>
+          <button onClick={onBaithakClick}
+            className="rounded-full px-3 py-1 text-xs font-bold transition-transform hover:scale-105"
+            style={{ background: 'rgba(5,150,105,0.75)', color: '#d1fae5', border: '1px solid rgba(52,211,153,0.4)' }}>
+            🪑 बैठक बुक
+          </button>
+          <button onClick={onGiftClick}
+            className="rounded-full px-3 py-1 text-xs font-bold transition-transform hover:scale-105"
+            style={{ background: 'rgba(180,83,9,0.75)', color: '#fef3c7', border: '1px solid rgba(251,191,36,0.4)' }}>
+            🎁 Gift Chai
+          </button>
         </div>
+        {/* Cultural floating badges */}
         <div className="flex gap-1.5 mt-2 flex-wrap justify-center">
           {[
             { label: '🐄 गाय का शुद्ध दूध', bg: 'rgba(245,158,11,0.25)', border: 'rgba(251,191,36,0.5)' },
             { label: '🏺 माटी की सुगंध',     bg: 'rgba(180,83,9,0.25)',  border: 'rgba(217,119,6,0.5)'  },
             { label: '🌐 Web3 Settled',       bg: 'rgba(20,184,166,0.2)', border: 'rgba(45,212,191,0.45)'},
           ].map(b => (
-            <span key={b.label} className="rounded-full px-2 py-0.5 text-xs font-semibold" style={{ background: b.bg, color: '#fef9c3', border: `1.5px solid ${b.border}` }}>{b.label}</span>
+            <span key={b.label} className="rounded-full px-2 py-0.5 text-xs font-semibold"
+              style={{ background: b.bg, color: '#fef9c3', border: `1.5px solid ${b.border}` }}>
+              {b.label}
+            </span>
           ))}
-          <span className="rounded-full px-2 py-0.5 text-xs font-bold" style={{ background: 'rgba(34,197,94,0.22)', color: '#d1fae5', border: '1.5px solid rgba(52,211,153,0.5)' }}>
+          {/* Free Chai Pool badge */}
+          <span className="rounded-full px-2 py-0.5 text-xs font-bold"
+            style={{ background: 'rgba(34,197,94,0.22)', color: '#d1fae5', border: '1.5px solid rgba(52,211,153,0.5)' }}>
             🏺 {lang === 'hi' ? `मुफ्त चाय: ${freeChaiPool}` : `Free Chais: ${freeChaiPool}`}
           </span>
         </div>
@@ -680,6 +793,7 @@ function VillageBanner({ lang, onNftClick, onRoyaltyClick, onEmergencyClick, onB
   )
 }
 
+// ── Emergency Assist Modal ─────────────────────────────────────────────────────
 const EMERGENCY_TYPES = [
   { key: 'medical', emoji: '🚑', hi: 'मेडिकल / फर्स्ट एड', en: 'Medical / First Aid' },
   { key: 'ride',    emoji: '🛺', hi: 'क्विक राइड / ऑटो',   en: 'Quick Ride / Auto' },
@@ -714,11 +828,20 @@ function EmergencyAssistModal({ lang, onClose, onPay }: { lang: Lang; onClose: (
               {lang === 'hi' ? 'नेटवर्क अलर्ट हो रहा है' : 'Alerting Nearby Network'}
               {'...'.slice(0, dot + 1)}
             </p>
-            <p className="text-sm" style={{ color: '#c4b5fd' }}>{lang === 'hi' ? 'देसी नेटवर्क से जोड़ा जा रहा है…' : 'Connecting to Desi Network…'}</p>
+            <p className="text-sm" style={{ color: '#c4b5fd' }}>
+              {lang === 'hi' ? 'देसी नेटवर्क से जोड़ा जा रहा है…' : 'Connecting to Desi Network…'}
+            </p>
+            <div className="mt-4 flex justify-center gap-1">
+              {[0,1,2,3].map(i => (
+                <div key={i} className="rounded-full transition-all" style={{ width: 8, height: 8, background: i <= dot ? '#fbbf24' : 'rgba(251,191,36,0.2)' }} />
+              ))}
+            </div>
           </div>
         ) : (
           <>
-            <p className="text-xs mb-3" style={{ color: '#c4b5fd' }}>{lang === 'hi' ? 'अपनी ज़रूरत चुनें — सिर्फ 0.10 USDC में तुरंत मदद' : 'Select your need — instant help for just 0.10 USDC'}</p>
+            <p className="text-xs mb-3" style={{ color: '#c4b5fd' }}>
+              {lang === 'hi' ? 'अपनी ज़रूरत चुनें — सिर्फ 0.10 USDC में तुरंत मदद' : 'Select your need — instant help for just 0.10 USDC'}
+            </p>
             <div className="grid grid-cols-2 gap-2 mb-4">
               {EMERGENCY_TYPES.map(t => (
                 <button key={t.key} onClick={() => setSelected(t.key)}
@@ -745,6 +868,7 @@ function EmergencyAssistModal({ lang, onClose, onPay }: { lang: Lang; onClose: (
   )
 }
 
+// ── Baithak Booking Modal ──────────────────────────────────────────────────────
 const TIME_SLOTS = ['9:00 AM','10:00 AM','11:00 AM','12:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM','7:00 PM']
 const SEATS = [
   { key: 'khat',    emoji: '🛏️', hi: 'खाट / चारपाई',      en: 'Khat / Charpai' },
@@ -761,7 +885,9 @@ function BaithakBookingModal({ lang, onClose, onBook }: { lang: Lang; onClose: (
           <p className="font-black text-lg" style={{ color: '#d1fae5' }}>🪑 {lang === 'hi' ? 'बैठक रिज़र्व करें' : 'Book a Baithak'}</p>
           <button onClick={onClose} className="text-emerald-300 hover:text-white text-xl font-bold">✕</button>
         </div>
-        <p className="text-xs mb-3" style={{ color: '#6ee7b7' }}>{lang === 'hi' ? '0.50 USDC रिफंडेबल डिपॉज़िट — बैठक कन्फर्म करें' : '0.50 USDC refundable deposit — secure your spot'}</p>
+        <p className="text-xs mb-3" style={{ color: '#6ee7b7' }}>
+          {lang === 'hi' ? '0.50 USDC रिफंडेबल डिपॉज़िट — बैठक कन्फर्म करें' : '0.50 USDC refundable deposit — secure your spot'}
+        </p>
         <p className="text-xs font-bold mb-2" style={{ color: '#a7f3d0' }}>{lang === 'hi' ? '⏰ टाइम स्लॉट चुनें:' : '⏰ Choose Time Slot:'}</p>
         <div className="flex flex-wrap gap-1.5 mb-4">
           {TIME_SLOTS.map(t => (
@@ -798,6 +924,7 @@ function BaithakBookingModal({ lang, onClose, onBook }: { lang: Lang; onClose: (
   )
 }
 
+// ── Gift Chai Modal ────────────────────────────────────────────────────────────
 const GIFT_OPTIONS = [
   { key: 'chai',  emoji: '☕', hi: 'कटिंग चाय',       en: 'Cutting Chai',    amount: '0.25' },
   { key: 'combo', emoji: '🥟', hi: 'समोसा कॉम्बो',     en: 'Samosa Combo',   amount: '0.75' },
@@ -835,7 +962,9 @@ function GiftChaiModal({ lang, onClose, onGift }: { lang: Lang; onClose: () => v
           </div>
         ) : (
           <>
-            <p className="text-xs mb-3" style={{ color: '#fde68a' }}>{lang === 'hi' ? 'दोस्त का वॉलेट/हैंडल डालें और गिफ्ट करें' : "Enter friend's wallet/handle and gift instantly"}</p>
+            <p className="text-xs mb-3" style={{ color: '#fde68a' }}>
+              {lang === 'hi' ? 'दोस्त का वॉलेट/हैंडल डालें और गिफ्ट करें' : "Enter friend's wallet/handle and gift instantly"}
+            </p>
             <input value={to} onChange={e => setTo(e.target.value)} placeholder={lang === 'hi' ? '0x... या @handle' : '0x... or @handle'}
               className="w-full rounded-xl px-3 py-2.5 text-sm mb-3 outline-none"
               style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(251,191,36,0.3)', color: '#fef3c7' }} />
@@ -865,6 +994,7 @@ function GiftChaiModal({ lang, onClose, onGift }: { lang: Lang; onClose: () => v
   )
 }
 
+// ── Error Boundary ─────────────────────────────────────────────────────────────
 interface BoundaryState { hasError: boolean }
 class ErrorBoundary extends Component<{ children: React.ReactNode }, BoundaryState> {
   constructor(props: { children: React.ReactNode }) { super(props); this.state = { hasError: false } }
@@ -887,6 +1017,7 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, BoundarySta
   }
 }
 
+// ── Main component ─────────────────────────────────────────────────────────────
 function TipJarInner() {
   const { address, isConnected, chainId } = useAccount()
   const { error: connectError } = useConnect()
@@ -895,6 +1026,7 @@ function TipJarInner() {
   const publicClient = usePublicClient()
   const { switchChain } = useSwitchChain()
 
+  // Live native USDC balance (Arc native = 18 decimals)
   const { data: balanceData, refetch: refetchBalance } = useBalance({
     address: address ?? undefined,
     chainId: ARC_TESTNET_CHAIN_ID,
@@ -908,18 +1040,13 @@ function TipJarInner() {
 
   const { speak, muted, toggleMute } = useSpeech(lang)
 
+  // Cart-based ordering
   const [cart, setCart] = useState<CartMap>({})
-  const [biz, setBiz] = useState<BizKey>(loadBiz)
-  const [stars, setStars] = useState(0)
-  const visibleItems = BUSINESS_MENUS[biz]
-  const pickBiz = (b: BizKey) => {
-    setBiz(b); saveBiz(b); setCart({})
-    speak(BIZ_META[b][lang])
-  }
   const [fulfillment, setFulfillment] = useState<Fulfillment>('dine-in')
   const totalStr = cartTotal(cart)
   const hasItems = parseFloat(totalStr) > 0
 
+  // Legacy single amount — derived from cart total (overridden by effectiveTipAmount after coupon)
   const tipAmount = totalStr
 
   const [name, setName] = useState('')
@@ -949,6 +1076,7 @@ function TipJarInner() {
   const [couponDiscount, setCouponDiscount] = useState(0)
   const VALID_COUPONS: Record<string, number> = { 'CHAI10': 0.10, 'DESI20': 0.20 }
   const [showNftPass, setShowNftPass] = useState(false)
+  const [_nftClaimed, _setNftClaimed] = useState(false)
   const [showRoyaltyConsole, setShowRoyaltyConsole] = useState(false)
   const [royaltyKey, setRoyaltyKey] = useState('')
   const [royaltyUnlocked, setRoyaltyUnlocked] = useState(false)
@@ -958,6 +1086,7 @@ function TipJarInner() {
   const [freeChaiPool, setFreeChaiPool] = useState(0)
   const [claimingFreeChai, setClaimingFreeChai] = useState(false)
 
+  // Per-wallet private order history — session only
   const [myOrders, setMyOrders] = useState<MyOrder[]>([])
   const [lastOrder, setLastOrder] = useState<MyOrder | null>(null)
   const activeWalletRef = useRef<string | undefined>(undefined)
@@ -969,6 +1098,7 @@ function TipJarInner() {
     }
   }, [address])
 
+  // Contract read state
   const [totalCollected, setTotalCollected] = useState<bigint | null>(null)
   const [tipsCount, setTipsCount] = useState<bigint | null>(null)
   const [ownerAddress, setOwnerAddress] = useState<string | null>(null)
@@ -981,6 +1111,7 @@ function TipJarInner() {
     else { if (connectError && !wasConnectedRef.current) setShowConnectError(true); wasConnectedRef.current = false }
   }, [isConnected, connectError])
 
+  // Hard privacy lock + Brave cache purge on disconnect
   useEffect(() => {
     if (!isConnected) {
       purgeWagmiCache()
@@ -996,19 +1127,21 @@ function TipJarInner() {
     }
   }, [isConnected])
 
+  // Brave accountsChanged → force disconnect
   useEffect(() => {
     if (typeof window === 'undefined' || !window.ethereum) return
     type EP = { on: (e: string, cb: (a: string[]) => void) => void; removeListener: (e: string, cb: (a: string[]) => void) => void }
     const provider = window.ethereum as EP
     const handler = (accounts: string[]) => { if (accounts.length === 0) { purgeWagmiCache(); disconnect() } }
-    try { provider.on('accountsChanged', handler) } catch {}
-    return () => { try { provider.removeListener('accountsChanged', handler) } catch {} }
+    try { provider.on('accountsChanged', handler) } catch { /* ignore */ }
+    return () => { try { provider.removeListener('accountsChanged', handler) } catch { /* ignore */ } }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const isWrongChain = isConnected && chainId !== ARC_TESTNET_CHAIN_ID
   const isBusy = step === 'tipping' || step === 'pending-tip'
 
+  // Receipt hook
   const { data: receiptData, status: receiptStatus } = useWaitForTransactionReceipt({
     hash: pendingHash ?? undefined,
     chainId: ARC_TESTNET_CHAIN_ID,
@@ -1019,7 +1152,8 @@ function TipJarInner() {
   const refetchAllRef = useRef(refetchAll)
   useEffect(() => { refetchAllRef.current = refetchAll }, [refetchAll])
 
-  const finalMessage = (stars > 0 ? `⭐${stars} ` : '') + (vibeTag ? `${vibeTag} — ` : '') + (message.trim() || cartSummaryLine(cart, s).slice(0, 60))
+  // Final message
+  const finalMessage = (vibeTag ? `${vibeTag} — ` : '') + (message.trim() || cartSummaryLine(cart, s).slice(0, 60))
   const finalMessageRef = useRef(finalMessage)
   useEffect(() => { finalMessageRef.current = finalMessage }, [finalMessage])
 
@@ -1034,6 +1168,7 @@ function TipJarInner() {
   const fulfillmentRef = useRef(fulfillment)
   useEffect(() => { fulfillmentRef.current = fulfillment }, [fulfillment])
 
+  // Receipt confirmation
   useEffect(() => {
     if (step !== 'pending-tip' || !pendingHash) return
     if (receiptStatus === 'success' && receiptData) {
@@ -1060,6 +1195,7 @@ function TipJarInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [receiptStatus, receiptData])
 
+  // Brave 12s fallback
   useEffect(() => {
     if (step !== 'pending-tip' || !pendingHash) return
     const timer = setTimeout(() => {
@@ -1078,6 +1214,7 @@ function TipJarInner() {
     return () => clearTimeout(timer)
   }, [step, pendingHash])
 
+  // Decoupled contract reads
   useEffect(() => {
     let cancelled = false
     const read = async () => {
@@ -1088,18 +1225,20 @@ function TipJarInner() {
           arcPublicClient.readContract({ address: TIPJAR.address, abi: TIPJAR.abi as Abi, functionName: 'getOwner' }) as Promise<string>,
         ])
         if (!cancelled) { setTotalCollected(tot); setTipsCount(cnt); setOwnerAddress(owner) }
-      } catch {}
+      } catch { /* silent */ }
     }
     void read()
     const timer = setInterval(() => { void read() }, 3_000)
     return () => { cancelled = true; clearInterval(timer) }
   }, [readSeq])
 
+  // Live balance from wagmi useBalance (replaces manual polling)
   useEffect(() => {
     if (!isConnected || !balanceData) { setUserBalanceDisplay(null); return }
     setUserBalanceDisplay(parseFloat(formatEther(balanceData.value)).toFixed(2))
   }, [isConnected, balanceData])
 
+  // ── Handlers ──────────────────────────────────────────────────────────────────
   const handleLangToggle = (next: Lang) => {
     setLangState(next); saveLang(next)
     if (!muted && typeof window !== 'undefined' && window.speechSynthesis) {
@@ -1108,7 +1247,7 @@ function TipJarInner() {
         const utt = new SpeechSynthesisUtterance(strings[next].langSwitchConfirm)
         utt.lang = next === 'hi' ? 'hi-IN' : 'en-IN'
         window.speechSynthesis.speak(utt)
-      } catch {}
+      } catch { /* ignore */ }
     }
   }
 
@@ -1120,7 +1259,7 @@ function TipJarInner() {
         const utt = new SpeechSynthesisUtterance(strings[lang].unmuteLabel)
         utt.lang = lang === 'hi' ? 'hi-IN' : 'en-IN'
         window.speechSynthesis.speak(utt)
-      } catch {}
+      } catch { /* ignore */ }
     }
     toggleMute()
   }
@@ -1138,14 +1277,14 @@ function TipJarInner() {
         try {
           await (window.ethereum as { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> })
             .request({ method: 'wallet_addEthereumChain', params: [{ chainId: hexChainId, chainName: 'Arc Testnet', rpcUrls: [ARC_RPC], nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 }, blockExplorerUrls: [arcChain.explorerBase] }] })
-        } catch {}
-      } else { try { void switchChain({ chainId: ARC_TESTNET_CHAIN_ID }) } catch {} }
+        } catch { /* user rejected */ }
+      } else { try { void switchChain({ chainId: ARC_TESTNET_CHAIN_ID }) } catch { /* ignore */ } }
     }
   }
 
   const handleCopyOwner = async () => {
     if (!ownerAddress) return
-    try { await navigator.clipboard.writeText(ownerAddress); setCopied(true); speak(s.copied); setTimeout(() => setCopied(false), 2000) } catch {}
+    try { await navigator.clipboard.writeText(ownerAddress); setCopied(true); speak(s.copied); setTimeout(() => setCopied(false), 2000) } catch { /* ignore */ }
   }
 
   const handleQrResult = (value: string) => {
@@ -1184,7 +1323,7 @@ function TipJarInner() {
     if (err) { toast.error(err); speak(err); return }
     setSummaryLoading(true); setStep('summary')
     if (publicClient && address) {
-      try { const bal = await publicClient.getBalance({ address }); setUserBalanceDisplay(parseFloat(formatEther(bal)).toFixed(2)) } catch {}
+      try { const bal = await publicClient.getBalance({ address }); setUserBalanceDisplay(parseFloat(formatEther(bal)).toFixed(2)) } catch { /* ignore */ }
       try {
         const gasPrice = await publicClient.getGasPrice()
         const feeWei = gasPrice * 100_000n
@@ -1204,16 +1343,14 @@ function TipJarInner() {
     const rawAddr = walletAddr.trim(); const rawName = name.trim()
     const isEvmAddr = /^0x[0-9a-fA-F]{40}$/.test(rawAddr)
     const tipName = rawAddr
-      ? isEvmAddr ? formatAddress(rawAddr) : clipBytes(rawAddr, 30)
-      : rawName ? clipBytes(rawName, 30) : formatAddress(address)
+      ? isEvmAddr ? formatAddress(rawAddr) : rawAddr.slice(0, 30)
+      : rawName ? (rawName.length > 30 ? rawName.slice(0, 29) + '…' : rawName) : formatAddress(address)
     setStep('tipping'); setPendingHash(null)
     let txHash: `0x${string}`
     try {
       txHash = await walletClient.writeContract({
         address: TIPJAR.address, abi: TIPJAR.abi as Abi, functionName: 'tip',
-        args: [tipName, clipBytes(finalMessage, 80)], value: nativeValue,
-        maxFeePerGas: parseUnits('20', 9),
-        maxPriorityFeePerGas: parseUnits('2', 9),
+        args: [tipName, finalMessage.slice(0, 80)], value: nativeValue,
       })
     } catch (e: unknown) {
       setStep('idle')
@@ -1223,6 +1360,7 @@ function TipJarInner() {
     setPendingHash(txHash); setStep('pending-tip')
   }
 
+  // Welcome toast — fires once on first load
   useEffect(() => {
     if (!welcomeShown) {
       const t = setTimeout(() => {
@@ -1270,9 +1408,10 @@ function TipJarInner() {
   const handleReset = () => {
     speak(s.sendAnother); setStep('idle'); setName(''); setWalletAddr('')
     setMessage(''); setCart({}); setTipHash(null); setPendingHash(null)
-    setFeeEstimate(null); setVibeTag(null); setLastOrder(null); setStars(0)
+    setFeeEstimate(null); setVibeTag(null); setLastOrder(null)
   }
 
+  // ── Derived ────────────────────────────────────────────────────────────────────
   const formattedTotal = totalCollected != null ? formatNativeUsdc(totalCollected) : '0.00'
   const displayTotal = isConnected ? formattedTotal : '0.00'
   const displayTipCount = isConnected && tipsCount != null ? Number(tipsCount) : 0
@@ -1282,6 +1421,7 @@ function TipJarInner() {
     ? Math.max(0, parseFloat(totalStr) * (1 - couponDiscount)).toFixed(2)
     : totalStr
 
+  // ── Render ─────────────────────────────────────────────────────────────────────
   return (
     <>
       {showQr && <QrScanner onResult={handleQrResult} onClose={() => setShowQr(false)} cancelLabel={s.scanQrCancel} />}
@@ -1294,6 +1434,7 @@ function TipJarInner() {
       {qrMerchant && <MerchantQrModal merchant={qrMerchant} onClose={() => setQrMerchant(null)} closeLabel={s.merchantQrClose} title={s.merchantQrTitle} />}
 
       <div className="relative min-h-dvh overflow-hidden" style={{ background: 'var(--bg-gradient)' }}>
+        {/* Ambient blobs — terracotta warm glow */}
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
           <div style={{ position:'absolute',top:'3%',left:'1%',width:480,height:480,borderRadius:'50%',background:'radial-gradient(circle,rgba(180,83,9,0.28) 0%,transparent 70%)',filter:'blur(90px)' }} />
           <div style={{ position:'absolute',top:'8%',right:'4%',width:340,height:340,borderRadius:'50%',background:'radial-gradient(circle,rgba(251,191,36,0.16) 0%,transparent 70%)',filter:'blur(80px)' }} />
@@ -1302,23 +1443,76 @@ function TipJarInner() {
           <div style={{ position:'absolute',bottom:'12%',left:'6%',width:360,height:360,borderRadius:'50%',background:'radial-gradient(circle,rgba(180,83,9,0.18) 0%,transparent 70%)',filter:'blur(75px)' }} />
           <div style={{ position:'absolute',bottom:'5%',right:'3%',width:300,height:300,borderRadius:'50%',background:'radial-gradient(circle,rgba(245,158,11,0.14) 0%,transparent 70%)',filter:'blur(65px)' }} />
         </div>
+        {/* Village morning SVG artwork overlay — top right, semi-transparent */}
+        <div className="fixed top-0 right-0 pointer-events-none opacity-[0.07] overflow-hidden" style={{ width: 420, height: 320, zIndex: 1 }}>
+          <svg viewBox="0 0 420 320" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+            {/* Village huts */}
+            <polygon points="30,200 80,140 130,200" fill="#d97706" />
+            <rect x="52" y="170" width="22" height="30" fill="#92400e" />
+            <polygon points="120,200 180,130 240,200" fill="#b45309" />
+            <rect x="144" y="168" width="24" height="32" fill="#78350f" />
+            <polygon points="230,200 300,125 370,200" fill="#d97706" />
+            <rect x="256" y="164" width="28" height="36" fill="#92400e" />
+            {/* Ground */}
+            <rect x="0" y="200" width="420" height="12" fill="#78350f" opacity="0.6" />
+            {/* Chulha / mud stove */}
+            <ellipse cx="60" cy="240" rx="28" ry="10" fill="#92400e" />
+            <rect x="42" y="218" width="36" height="22" rx="4" fill="#78350f" />
+            <rect x="50" y="210" width="20" height="10" rx="2" fill="#451a03" />
+            {/* Steam from chulha */}
+            <path d="M58 208 Q55 195 60 185 Q65 175 60 165" stroke="#fde68a" strokeWidth="2.5" strokeLinecap="round" opacity="0.6" />
+            <path d="M65 205 Q70 192 66 180 Q62 168 68 158" stroke="#fde68a" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
+            {/* Clay kulhads */}
+            <path d="M160 240 Q155 255 165 258 Q175 255 170 240 Z" fill="#b45309" />
+            <ellipse cx="165" cy="240" rx="10" ry="4" fill="#d97706" />
+            <path d="M190 238 Q185 253 195 256 Q205 253 200 238 Z" fill="#92400e" />
+            <ellipse cx="195" cy="238" rx="10" ry="4" fill="#b45309" />
+            {/* Cow */}
+            <ellipse cx="320" cy="232" rx="40" ry="20" fill="#fde68a" opacity="0.7" />
+            <circle cx="360" cy="220" r="14" fill="#fde68a" opacity="0.7" />
+            <rect x="305" y="250" width="8" height="18" rx="3" fill="#d97706" opacity="0.7" />
+            <rect x="320" y="252" width="8" height="16" rx="3" fill="#d97706" opacity="0.7" />
+            <rect x="338" y="252" width="8" height="16" rx="3" fill="#d97706" opacity="0.7" />
+            <rect x="352" y="250" width="8" height="18" rx="3" fill="#d97706" opacity="0.7" />
+            {/* Milk pail */}
+            <path d="M368 235 Q375 235 376 250 Q377 260 366 260 Q355 260 356 250 Q357 235 364 235 Z" fill="#e5e7eb" opacity="0.6" />
+            {/* Sun / morning light */}
+            <circle cx="390" cy="40" r="30" fill="#fbbf24" opacity="0.4" />
+            <circle cx="390" cy="40" r="20" fill="#fcd34d" opacity="0.3" />
+            {/* Sun rays */}
+            {[0,45,90,135,180,225,270,315].map((deg, i) => (
+              <line key={i}
+                x1={390 + Math.cos(deg*Math.PI/180)*24}
+                y1={40 + Math.sin(deg*Math.PI/180)*24}
+                x2={390 + Math.cos(deg*Math.PI/180)*38}
+                y2={40 + Math.sin(deg*Math.PI/180)*38}
+                stroke="#fcd34d" strokeWidth="2" opacity="0.5" />
+            ))}
+          </svg>
+        </div>
 
         <div className="relative z-10 w-full max-w-7xl mx-auto px-3 sm:px-5 pb-12 pt-4">
 
+          {/* ── Grand Chai Stall Signboard ── */}
           <VillageBanner lang={lang} onNftClick={() => setShowNftPass(true)} onRoyaltyClick={() => setShowRoyaltyConsole(true)} onEmergencyClick={() => setShowEmergency(true)} onBaithakClick={() => setShowBaithak(true)} onGiftClick={() => setShowGiftChai(true)} freeChaiPool={freeChaiPool} />
 
           <div className="rounded-2xl mb-3 overflow-hidden relative" style={{
             background: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 15%, #b45309 35%, #d97706 55%, #ea580c 70%, #9a3412 85%, #7c2d12 100%)',
             boxShadow: '0 12px 48px rgba(153,27,27,0.50), 0 0 0 3px rgba(251,191,36,0.65), 0 0 0 6px rgba(180,83,9,0.25)',
           }}>
+            {/* Marigold garland top strip */}
             <div className="flex items-center justify-center gap-0 py-1 px-4 overflow-hidden" style={{ background:'rgba(0,0,0,0.22)' }}>
               {'🌸🌼🌸🌼🌸🌼🌸🌼🌸🌼🌸🌼🌸🌼🌸🌼'.split('').map((c, i) => (
                 <span key={i} className="text-xs leading-none">{c}</span>
               ))}
             </div>
 
+            {/* Main signboard content — two-column: title left, status widget right */}
             <div className="px-4 py-2.5">
+              {/* Two-column: left = title+slogans, right = status widget */}
               <div className="flex items-start justify-between gap-4">
+
+                {/* LEFT: title + subtitle + badges */}
                 <div className="flex items-start gap-2 flex-1 min-w-0">
                   <span className="text-3xl sm:text-4xl drop-shadow-lg flex-shrink-0">☕</span>
                   <div className="min-w-0">
@@ -1345,13 +1539,16 @@ function TipJarInner() {
                   </div>
                 </div>
 
+                {/* RIGHT: status widget + total */}
                 <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
+                  {/* Total collected */}
                   <div className="text-right rounded-xl px-3 py-1.5" style={{ background:'rgba(0,0,0,0.25)', border:'1px solid rgba(251,191,36,0.3)' }}>
                     <p className="tabular-nums font-black leading-none flex items-center gap-1.5" style={{ color:'#fef3c7', fontSize:'clamp(1.15rem,4vw,1.6rem)' }}>
                       {displayTotal} <UsdcIcon size={15} /><span className="text-sm font-semibold opacity-75">USDC</span>
                     </p>
                     <p className="text-[10px] sm:text-xs font-semibold mt-0.5" style={{ color:'rgba(254,243,199,0.65)' }}>{s.totalCollected}</p>
                   </div>
+                  {/* Live status badges */}
                   <div className="flex flex-col gap-1">
                     {[
                       { bg:'rgba(16,185,129,0.22)', border:'rgba(16,185,129,0.5)', text: lang === 'hi' ? 'Arc Testnet Active 🟢' : 'Arc Testnet Active 🟢', color:'#6ee7b7' },
@@ -1366,9 +1563,12 @@ function TipJarInner() {
                 </div>
               </div>
             </div>
+
+            {/* Bottom spectrum strip */}
             <div className="h-1" style={{ background:'linear-gradient(90deg,#06b6d4,#6366f1,#ec4899,#f59e0b,#10b981,#06b6d4)' }} />
           </div>
 
+          {/* ── Top header bar ── */}
           <header className="mb-4 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
               <Coffee size={18} style={{ color:'var(--accent)',flexShrink:0 }} />
@@ -1398,6 +1598,7 @@ function TipJarInner() {
             </div>
           </header>
 
+          {/* Banners */}
           {isWrongChain && (
             <div className="rounded-xl px-4 py-3 mb-3 flex items-center gap-3" style={{ background:'rgba(186,43,76,0.08)',border:'1px solid rgba(186,43,76,0.20)' }}>
               <AlertCircle size={15} style={{ color:'var(--danger)',flexShrink:0 }} />
@@ -1416,9 +1617,13 @@ function TipJarInner() {
             </div>
           )}
 
+          {/* ── STOREFRONT (always visible) ── */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
 
+              {/* ── LEFT COLUMN: Stats + Merchant + Orders (order-2 on mobile, order-1 on lg) ── */}
               <div className="space-y-4 order-2 lg:order-1">
+
+                {/* Today's Special combo card */}
                 <div className="rounded-2xl p-4 overflow-hidden relative" style={{ background:'linear-gradient(135deg,#fef3c7,#fde68a,#fbbf24)', border:'2px solid rgba(251,191,36,0.5)', boxShadow:'0 4px 20px rgba(251,191,36,0.25)' }}>
                   <p className="text-sm font-black uppercase tracking-widest mb-2" style={{ color:'#92400e' }}>{lang === 'hi' ? '⭐ आज का स्पेशल' : "⭐ Today's Special"}</p>
                   <p className="text-lg font-black mb-1" style={{ color:'#78350f' }}>🍵🥟 {lang === 'hi' ? 'कटिंग चाय + 2 समोसे' : 'Cutting Chai + 2 Samosas'}</p>
@@ -1430,13 +1635,13 @@ function TipJarInner() {
                   <p className="text-xs" style={{ color:'#92400e' }}>{lang === 'hi' ? '🌸 ताज़ी इलायची चाय हर घंटे तैयार' : '🌸 Fresh elaichi chai brewed every hour'}</p>
                 </div>
 
+                {/* Chai Philosophy rotating quotes */}
                 <ChaiPhilosophyCard lang={lang} />
+
+                {/* Retro FM Radio */}
                 <FmRadioWidget lang={lang} />
 
-                <ChaiExtras lang={lang} total={totalCollected} speak={speak} muted={muted} />
-                <BottomNav lang={lang} speak={speak} />
-                <div className="h-16 md:hidden" />
-
+                {/* Web3 trust badges */}
                 <div className="rounded-2xl p-4 space-y-2" style={{ background:'linear-gradient(135deg,rgba(251,191,36,0.10),rgba(234,88,12,0.07))', border:'1px solid rgba(251,191,36,0.28)' }}>
                   <p className="text-xs font-black uppercase tracking-widest mb-1" style={{ color:'#92400e' }}>{lang === 'hi' ? '🔐 Web3 भरोसा' : '🔐 Web3 Trust'}</p>
                   {[
@@ -1452,6 +1657,7 @@ function TipJarInner() {
                   ))}
                 </div>
 
+                {/* Stats card */}
                 <div className="rounded-2xl p-5" style={glass.card}>
                   <div style={{ height:3,borderRadius:99,background:spectral,marginBottom:16 }} />
                   <p className="text-sm font-semibold tracking-widest uppercase mb-1" style={{ color:'var(--subtle)' }}>{s.totalCollected}</p>
@@ -1482,6 +1688,7 @@ function TipJarInner() {
                   </div>
                 </div>
 
+                {/* Balance strip */}
                 {(userBalanceDisplay || isWrongChain) && (
                   <div className="rounded-xl px-4 py-2.5 flex items-center gap-2" style={glass.inner}>
                     <TokenUSDC variant="branded" size={15} />
@@ -1491,6 +1698,7 @@ function TipJarInner() {
                   </div>
                 )}
 
+                {/* Faucet nudge */}
                 {isLowBalance && !isWrongChain && (
                   <div className="rounded-xl px-4 py-2.5 flex items-center gap-2" style={{ background:'rgba(95,190,255,0.08)',border:'1px solid rgba(95,190,255,0.2)' }}>
                     <Droplets size={13} style={{ color:'var(--accent)',flexShrink:0 }} />
@@ -1499,6 +1707,7 @@ function TipJarInner() {
                   </div>
                 )}
 
+                {/* Merchant directory */}
                 <div className="rounded-2xl overflow-hidden" style={glass.card}>
                   <button onClick={() => setShowMerchants((v) => !v)} className="w-full flex items-center gap-3 px-5 py-4 text-left" style={{ background:'transparent' }}>
                     <Store size={15} style={{ color:'var(--accent)',flexShrink:0 }} />
@@ -1510,6 +1719,7 @@ function TipJarInner() {
                   </button>
                   {showMerchants && (
                     <div className="px-4 pb-4 space-y-2">
+                      {/* Search + Register */}
                       <div className="flex gap-2 mb-2">
                         <input value={merchantSearch} onChange={e => setMerchantSearch(e.target.value)}
                           placeholder={lang === 'hi' ? '🔍 खोजें…' : '🔍 Search…'}
@@ -1536,134 +1746,6 @@ function TipJarInner() {
                   )}
                 </div>
 
+                {/* Claim Free Chai — Pay-it-Forward */}
                 <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(135deg,rgba(6,78,59,0.7),rgba(5,150,105,0.4))', border: '1.5px solid rgba(52,211,153,0.4)', boxShadow: '0 4px 16px rgba(5,150,105,0.15)' }}>
-                  <p className="text-xs font-black uppercase tracking-widest mb-1" style={{ color: '#6ee7b7' }}>{lang === 'hi' ? '🏺 एक और कप — Pay-it-Forward' : '🏺 Ek Aur Cup — Pay-it-Forward'}</p>
-                  <p className="text-xs mb-3" style={{ color: 'rgba(167,243,208,0.75)' }}>{lang === 'hi' ? `${freeChaiPool} मुफ्त चाय उपलब्ध — किसी ने आपके लिए दी है!` : `${freeChaiPool} free chai${freeChaiPool !== 1 ? 's' : ''} available — someone paid it forward!`}</p>
-                  <button
-                    disabled={claimingFreeChai || freeChaiPool === 0}
-                    onClick={async () => {
-                      if (freeChaiPool === 0) { toast.error(lang === 'hi' ? '☕ अभी कोई मुफ्त चाय नहीं है!' : '☕ No free chais in the pool right now!'); return }
-                      if (!isConnected) { toast(lang === 'hi' ? '🔗 पहले वॉलेट कनेक्ट करें' : '🔗 Connect your wallet first'); return }
-                      setClaimingFreeChai(true)
-                      await new Promise(r => setTimeout(r, 1500))
-                      setFreeChaiPool(p => Math.max(0, p - 1))
-                      setClaimingFreeChai(false)
-                      toast.success(lang === 'hi' ? '🎉 मुफ्त चाय क्लेम हो गई! चाय का मज़ा लें ☕' : '🎉 Free chai claimed! Enjoy your cup ☕')
-                    }}
-                    className="w-full rounded-xl py-2.5 text-sm font-bold transition-all"
-                    style={{
-                      background: freeChaiPool === 0 ? 'rgba(255,255,255,0.08)' : 'rgba(52,211,153,0.25)',
-                      color: freeChaiPool === 0 ? 'rgba(167,243,208,0.4)' : '#34d399',
-                      border: `1.5px solid ${freeChaiPool === 0 ? 'rgba(52,211,153,0.15)' : 'rgba(52,211,153,0.5)'}`,
-                      cursor: freeChaiPool === 0 ? 'not-allowed' : 'pointer',
-                    }}>
-                    {claimingFreeChai ? (lang === 'hi' ? '⏳ क्लेम हो रहा है...' : '⏳ Claiming...') : (lang === 'hi' ? '🎁 मुफ्त चाय क्लेम करें' : '🎁 Claim a Free Chai')}
-                  </button>
-                </div>
-
-                {myOrders.length > 0 && (
-                  <div className="rounded-2xl p-5" style={glass.card}>
-                    <p className="display text-sm font-bold mb-3" style={{ color:'var(--ink)' }}>{s.myOrdersTitle}</p>
-                    <div className="space-y-2">
-                      {myOrders.map((order) => {
-                        const secsAgo = Math.floor((Date.now() - order.timestamp) / 1000)
-                        const timeLabel = secsAgo < 60 ? (lang === 'hi' ? 'अभी-अभी' : 'just now') : secsAgo < 3600 ? (lang === 'hi' ? `${Math.floor(secsAgo/60)} मिनट पहले` : `${Math.floor(secsAgo/60)}m ago`) : (lang === 'hi' ? `${Math.floor(secsAgo/3600)} घंटे पहले` : `${Math.floor(secsAgo/3600)}h ago`)
-                        return (
-                          <div key={order.txHash} className="rounded-xl px-3 py-2.5" style={glass.inner}>
-                            <div className="flex items-center justify-between gap-2">
-                              <a href={buildTxExplorerUrl(ARC_TESTNET_CHAIN_ID, order.txHash)} target="_blank" rel="noopener noreferrer" className="mono text-xs inline-flex items-center gap-1 hover:underline" style={{ color:'var(--accent-hover)' }}>
-                                {formatAddress(order.txHash)} <ExternalLink size={10} />
-                              </a>
-                              <span className="text-xs font-bold tabular-nums flex-shrink-0" style={{ color:'var(--accent)' }}>{order.amount} USDC</span>
-                            </div>
-                            {order.cartLine && <p className="text-xs mt-0.5" style={{ color:'var(--muted)' }}>{order.cartLine}</p>}
-                            <p className="text-xs mt-0.5" style={{ color:'var(--subtle)' }}>{timeLabel}</p>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-4 order-1 lg:order-2">
-                <div className="rounded-2xl p-4" style={glass.card}>
-                  <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color:'var(--subtle)' }}>{s.fulfillmentTitle}</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {([['delivery', <Bike key="b" size={15} />, s.fulfillmentDelivery], ['dine-in', <UtensilsCrossed key="u" size={15} />, s.fulfillmentDineIn]] as [Fulfillment, React.ReactNode, string][]).map(([val, icon, label]) => (
-                      <button key={val} onClick={() => { setFulfillment(val); speak(label) }}
-                        className="rounded-xl p-3 flex items-center gap-2 text-sm font-semibold transition-all"
-                        style={fulfillment === val ? { background:'var(--accent)',color:'#fff',boxShadow:'0 4px 12px rgba(99,102,241,0.3)' } : { background:'var(--surface-muted)',color:'var(--ink)' }}>
-                        {icon}<span className="text-left leading-tight">{label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {step === 'timed-out' && (
-                  <div className="rounded-2xl p-5" style={glass.card}>
-                    <div className="flex items-start gap-3 mb-4">
-                      <AlertCircle size={20} style={{ color:'var(--danger)',flexShrink:0,marginTop:2 }} />
-                      <div>
-                        <p className="text-sm font-semibold mb-1" style={{ color:'var(--ink)' }}>{s.txTimeout}</p>
-                        {(tipHash ?? pendingHash) && (
-                          <a href={buildTxExplorerUrl(ARC_TESTNET_CHAIN_ID, (tipHash ?? pendingHash)!)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs" style={{ color:'var(--accent-hover)' }}>
-                            <span className="mono">{formatAddress((tipHash ?? pendingHash)!)}</span><ExternalLink size={10} />
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                    <button onClick={() => { speak(s.tryAgain); handleReset() }} className="w-full rounded-xl py-3 text-sm font-semibold" style={{ background:'var(--surface-muted)',color:'var(--ink-2)' }}>{s.tryAgain}</button>
-                  </div>
-                )}
-
-                {step === 'done' && lastOrder && (
-                  <OrderReceiptCard order={lastOrder} lang={lang} onNewOrder={handleReset} />
-                )}
-
-                {step === 'done' && !lastOrder && (
-                  <div className="rounded-2xl p-5 text-center" style={glass.card}>
-                    <CheckCircle2 size={40} className="mx-auto mb-3" style={{ color:'var(--success)' }} />
-                    <p className="display text-lg font-bold mb-1" style={{ color:'var(--ink)' }}>{s.thankyouTitle}</p>
-                    <p className="text-sm mb-3" style={{ color:'var(--muted)' }}>{s.thankyouBody}</p>
-                    <button onClick={handleReset} className="w-full rounded-xl py-3 text-sm font-semibold mt-2" style={{ background:'var(--surface-muted)',color:'var(--ink-2)' }}>{s.sendAnother}</button>
-                  </div>
-                )}
-
-                {step === 'summary' && (
-                  <div className="rounded-2xl p-5" style={glass.card}>
-                    <p className="display text-base font-bold mb-4" style={{ color:'var(--ink)' }}>{s.summaryTitle}</p>
-                    {summaryLoading ? (
-                      <div className="flex justify-center py-6"><span className="inline-block w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin" style={{ color:'var(--accent)' }} /></div>
-                    ) : (
-                      <>
-                        {([
-                          [s.summaryYouSend(tipAmount || '0'), null],
-                          [s.summaryFee, feeEstimate != null ? `${feeEstimate} USDC` : s.summaryFeeValue],
-                          [s.summaryTo, ownerAddress ? formatAddress(ownerAddress) : formatAddress(TIPJAR.address)],
-                          [s.receiptFulfillment, fulfillment === 'delivery' ? s.fulfillmentDelivery : s.fulfillmentDineIn],
-                        ] as [string, string | null][]).map(([label, value]) => (
-                          <div key={label} className="flex items-center justify-between py-2" style={{ borderBottom:'1px solid rgba(0,0,0,0.05)' }}>
-                            <span className="text-sm" style={{ color:'var(--muted)' }}>{label}</span>
-                            {value && <span className="text-sm font-semibold mono" style={{ color:'var(--ink)' }}>{value}</span>}
-                          </div>
-                        ))}
-                        <div className="rounded-xl px-3 py-2.5 mt-3" style={{ background:'rgba(95,190,255,0.08)',border:'1px solid rgba(95,190,255,0.2)' }}>
-                          <p className="text-xs" style={{ color:'var(--accent)' }}>{s.singleStepNote}</p>
-                        </div>
-                        {userBalanceDisplay && <p className="text-xs mt-2 tabular-nums" style={{ color:'var(--subtle)' }}>{s.yourBalance}: {userBalanceDisplay} USDC</p>}
-                        <div className="flex gap-2 mt-4">
-                          <button onClick={() => setStep('idle')} className="flex-1 rounded-xl py-3 text-sm font-semibold" style={{ background:'var(--surface-muted)',color:'var(--ink-2)' }}>←</button>
-                          <button onClick={() => { speak(s.proceedBtn(tipAmount || '0')); void handleTip() }}
-                            className="flex-[3] rounded-xl py-3 text-sm font-bold flex items-center justify-center gap-2" style={{ background:'var(--accent)',color:'#fff' }}>
-                            <Heart size={15} />{s.proceedBtn(tipAmount || '0')}
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {(step === 'idle' || isBusy) && (
-                  <div id="sec-menu" className="rounded-2xl p-5 overflow-hidden" style={{ background:'linear-gradient(160deg,#1c1917,#292524)', border:'2px solid rgba(251,191,36,0.35)', boxShadow:'0 8px 32px rgba(0,0,0,0.35)' }}>
-                    <div className="flex items-c
+                  <p className="text-xs font-black uppercase 
