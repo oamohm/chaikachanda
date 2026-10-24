@@ -44,6 +44,7 @@ import { type Lang, strings, loadLang, saveLang } from '@/i18n'
 import { purgeWagmiCache } from '@/safe-storage'
 import { useSpeech } from '@/hooks/useSpeech'
 import QrScanner, { qrScanSupported } from './QrScanner'
+import { BizSwitcher, StarRating, ChaiExtras, BottomNav, BIZ_META, loadBiz, saveBiz, clipBytes, type BizKey } from './ChaiExtras'
 import tipJarArtifact from '../../contracts/out/TipJar.sol/TipJar.json'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -90,7 +91,8 @@ function formatNativeUsdc(raw: bigint): string {
 
 // ── Menu ───────────────────────────────────────────────────────────────────────
 interface MenuItem {
-  key: 'chai' | 'kulhadChai' | 'masalaChai' | 'samosa' | 'kachori' | 'lassi' | 'aloo' | 'combo' | 'kulhad'
+  key: string
+  label?: { hi: string; en: string }
   emoji: string
   price: string
   amount: string
@@ -112,6 +114,37 @@ const MENU_ITEMS: MenuItem[] = [
   { key: 'kulhad',     emoji: '🏺✨', price: '2.50 USDC', amount: '2.5',  color: '#d97706', selectedBg: 'rgba(217,119,6,0.15)' },
 ]
 
+// Other kinds of shops (same contract, only the menu changes)
+function mk(key: string, emoji: string, cents: number, hi: string, en: string, color: string): MenuItem {
+  const a = cents / 100
+  return { key, emoji, price: `${a.toFixed(2)} USDC`, amount: String(a), color, selectedBg: `${color}26`, label: { hi, en } }
+}
+const BUSINESS_MENUS: Record<BizKey, MenuItem[]> = {
+  chai: MENU_ITEMS,
+  store: [
+    mk('atta', '🌾', 150, 'आटा (1 किलो)', 'Atta (1 kg)', '#f59e0b'),
+    mk('rice', '🍚', 200, 'चावल (1 किलो)', 'Rice (1 kg)', '#10b981'),
+    mk('dal', '🫘', 180, 'दाल (500 ग्राम)', 'Dal (500 g)', '#ef4444'),
+    mk('oil', '🛢️', 300, 'तेल (1 लीटर)', 'Oil (1 L)', '#f97316'),
+    mk('milk', '🥛', 70, 'दूध (1 लीटर)', 'Milk (1 L)', '#14b8a6'),
+    mk('biscuit', '🍪', 40, 'बिस्कुट', 'Biscuits', '#8b5cf6'),
+  ],
+  freelancer: [
+    mk('review', '🔍', 200, 'कोड / डिज़ाइन रिव्यू', 'Code / design review', '#f59e0b'),
+    mk('call', '📞', 500, 'सलाह कॉल (30 मिनट)', 'Advice call (30 min)', '#10b981'),
+    mk('logo', '🎨', 1000, 'लोगो डिज़ाइन', 'Logo design', '#ec4899'),
+    mk('page', '🌐', 2500, 'लैंडिंग पेज', 'Landing page', '#6366f1'),
+    mk('coffee', '☕', 100, 'कॉफी पिलाइए', 'Buy me a coffee', '#d97706'),
+  ],
+  corporate: [
+    mk('consult', '📊', 1500, 'परामर्श सत्र', 'Consulting session', '#f59e0b'),
+    mk('audit', '🧾', 3000, 'ऑडिट रिपोर्ट', 'Audit report', '#ef4444'),
+    mk('train', '🎓', 2000, 'टीम ट्रेनिंग', 'Team training', '#10b981'),
+    mk('support', '🛠️', 1000, 'मासिक सपोर्ट', 'Monthly support', '#6366f1'),
+  ],
+}
+const ALL_ITEMS: MenuItem[] = [...BUSINESS_MENUS.chai, ...BUSINESS_MENUS.store, ...BUSINESS_MENUS.freelancer, ...BUSINESS_MENUS.corporate]
+
 const BADGE_STYLES: Record<NonNullable<MenuItem['badge']>, { bg: string; color: string; label: { hi: string; en: string } }> = {
   bestseller: { bg: 'rgba(251,191,36,0.18)', color: '#b45309', label: { hi: 'बेस्टसेलर', en: 'Bestseller' } },
   hot:        { bg: 'rgba(239,68,68,0.14)',  color: '#dc2626', label: { hi: 'गरमागरम',   en: 'Hot'        } },
@@ -121,6 +154,8 @@ const BADGE_STYLES: Record<NonNullable<MenuItem['badge']>, { bg: string; color: 
 }
 
 function getMenuLabel(key: MenuItem['key'], s: typeof strings['en']): string {
+  const extraItem = ALL_ITEMS.find((i) => i.key === key && i.label)
+  if (extraItem?.label) return extraItem.label[s === strings.hi ? 'hi' : 'en']
   if (key === 'chai')       return s.menuItemChai
   if (key === 'kulhadChai') return s.menuItemKulhadChai
   if (key === 'masalaChai') return s.menuItemMasalaChai
@@ -136,7 +171,7 @@ type CartMap = Partial<Record<MenuItem['key'], number>>
 
 function cartTotal(cart: CartMap): string {
   let sum = 0
-  for (const item of MENU_ITEMS) {
+  for (const item of ALL_ITEMS) {
     const qty = cart[item.key] ?? 0
     if (qty > 0) sum += qty * parseFloat(item.amount)
   }
@@ -144,7 +179,7 @@ function cartTotal(cart: CartMap): string {
 }
 
 function cartSummaryLine(cart: CartMap, s: typeof strings['en']): string {
-  return MENU_ITEMS
+  return ALL_ITEMS
     .filter((i) => (cart[i.key] ?? 0) > 0)
     .map((i) => `${getMenuLabel(i.key, s)} ×${cart[i.key] ?? 0}`)
     .join(', ')
@@ -874,6 +909,13 @@ function TipJarInner() {
   const { speak, muted, toggleMute } = useSpeech(lang)
 
   const [cart, setCart] = useState<CartMap>({})
+  const [biz, setBiz] = useState<BizKey>(loadBiz)
+  const [stars, setStars] = useState(0)
+  const visibleItems = BUSINESS_MENUS[biz]
+  const pickBiz = (b: BizKey) => {
+    setBiz(b); saveBiz(b); setCart({})
+    speak(BIZ_META[b][lang])
+  }
   const [fulfillment, setFulfillment] = useState<Fulfillment>('dine-in')
   const totalStr = cartTotal(cart)
   const hasItems = parseFloat(totalStr) > 0
@@ -977,7 +1019,7 @@ function TipJarInner() {
   const refetchAllRef = useRef(refetchAll)
   useEffect(() => { refetchAllRef.current = refetchAll }, [refetchAll])
 
-  const finalMessage = (vibeTag ? `${vibeTag} — ` : '') + (message.trim() || cartSummaryLine(cart, s).slice(0, 60))
+  const finalMessage = (stars > 0 ? `⭐${stars} ` : '') + (vibeTag ? `${vibeTag} — ` : '') + (message.trim() || cartSummaryLine(cart, s).slice(0, 60))
   const finalMessageRef = useRef(finalMessage)
   useEffect(() => { finalMessageRef.current = finalMessage }, [finalMessage])
 
@@ -1162,14 +1204,14 @@ function TipJarInner() {
     const rawAddr = walletAddr.trim(); const rawName = name.trim()
     const isEvmAddr = /^0x[0-9a-fA-F]{40}$/.test(rawAddr)
     const tipName = rawAddr
-      ? isEvmAddr ? formatAddress(rawAddr) : rawAddr.slice(0, 30)
-      : rawName ? (rawName.length > 30 ? rawName.slice(0, 29) + '…' : rawName) : formatAddress(address)
+      ? isEvmAddr ? formatAddress(rawAddr) : clipBytes(rawAddr, 30)
+      : rawName ? clipBytes(rawName, 30) : formatAddress(address)
     setStep('tipping'); setPendingHash(null)
     let txHash: `0x${string}`
     try {
       txHash = await walletClient.writeContract({
         address: TIPJAR.address, abi: TIPJAR.abi as Abi, functionName: 'tip',
-        args: [tipName, finalMessage.slice(0, 80)], value: nativeValue,
+        args: [tipName, clipBytes(finalMessage, 80)], value: nativeValue,
         maxFeePerGas: parseUnits('20', 9),
         maxPriorityFeePerGas: parseUnits('2', 9),
       })
@@ -1228,7 +1270,7 @@ function TipJarInner() {
   const handleReset = () => {
     speak(s.sendAnother); setStep('idle'); setName(''); setWalletAddr('')
     setMessage(''); setCart({}); setTipHash(null); setPendingHash(null)
-    setFeeEstimate(null); setVibeTag(null); setLastOrder(null)
+    setFeeEstimate(null); setVibeTag(null); setLastOrder(null); setStars(0)
   }
 
   const formattedTotal = totalCollected != null ? formatNativeUsdc(totalCollected) : '0.00'
@@ -1390,6 +1432,10 @@ function TipJarInner() {
 
                 <ChaiPhilosophyCard lang={lang} />
                 <FmRadioWidget lang={lang} />
+
+                <ChaiExtras lang={lang} total={totalCollected} speak={speak} muted={muted} />
+                <BottomNav lang={lang} speak={speak} />
+                <div className="h-16 md:hidden" />
 
                 <div className="rounded-2xl p-4 space-y-2" style={{ background:'linear-gradient(135deg,rgba(251,191,36,0.10),rgba(234,88,12,0.07))', border:'1px solid rgba(251,191,36,0.28)' }}>
                   <p className="text-xs font-black uppercase tracking-widest mb-1" style={{ color:'#92400e' }}>{lang === 'hi' ? '🔐 Web3 भरोसा' : '🔐 Web3 Trust'}</p>
@@ -1619,322 +1665,5 @@ function TipJarInner() {
                 )}
 
                 {(step === 'idle' || isBusy) && (
-                  <div className="rounded-2xl p-5 overflow-hidden" style={{ background:'linear-gradient(160deg,#1c1917,#292524)', border:'2px solid rgba(251,191,36,0.35)', boxShadow:'0 8px 32px rgba(0,0,0,0.35)' }}>
-                    <div className="flex items-center gap-2 mb-1 pb-2" style={{ borderBottom:'1px dashed rgba(251,191,36,0.3)' }}>
-                      <span className="text-2xl">🚂</span>
-                      <p className="display text-lg sm:text-xl font-black tracking-wider" style={{ color:'#fef3c7', textShadow:'0 0 12px rgba(251,191,36,0.4)' }}>{lang === 'hi' ? 'प्लेटफ़ॉर्म मेनू — भाव सूची' : 'PLATFORM MENU — PRICE LIST'}</p>
-                    </div>
-                    <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color:'rgba(251,191,36,0.70)' }}>{lang === 'hi' ? 'इंडियन रेलवेज़ • चाय का चंदा स्टॉल' : 'Indian Railways • Chai Ka Chanda Stall'}</p>
-                    <div className="space-y-2 mb-3">
-                      {MENU_ITEMS.map((item) => {
-                        const label = getMenuLabel(item.key, s)
-                        const qty = cart[item.key] ?? 0
-                        return (
-                          <div key={item.key} className="rounded-xl px-3 py-2.5 flex items-center gap-3"
-                            style={qty > 0 ? { background: item.selectedBg, border:`1.5px solid ${item.color}60` } : { background:'rgba(255,255,255,0.04)', border:`1px solid ${item.color}22` }}>
-                            <span className="text-2xl flex-shrink-0">{item.emoji}</span>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <p className="text-base sm:text-lg font-bold leading-tight" style={{ color:'#fef3c7' }}>{label}</p>
-                                {item.badge && (
-                                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full leading-none" style={{ background: BADGE_STYLES[item.badge].bg, color: BADGE_STYLES[item.badge].color }}>
-                                    {BADGE_STYLES[item.badge].label[lang]}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-sm tabular-nums font-extrabold" style={{ color: item.color }}>{item.price}</p>
-                              {item.splitTag && <span className="text-[10px] font-semibold" style={{ color:'#a78bfa' }}>⚡ {s.menuSplitTag}</span>}
-                            </div>
-                            <div className="flex items-center gap-1.5 flex-shrink-0">
-                              <button onClick={() => adjustCart(item.key, -1)} disabled={qty === 0}
-                                className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
-                                style={{ background:qty === 0 ? 'rgba(0,0,0,0.04)' : 'var(--surface-muted)',color:qty === 0 ? 'var(--subtle)' : 'var(--ink-2)' }}>
-                                <Minus size={12} />
-                              </button>
-                              <span className="w-6 text-center text-sm font-bold tabular-nums" style={{ color:'var(--ink)' }}>{qty}</span>
-                              <button onClick={() => adjustCart(item.key, 1)}
-                                className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
-                                style={{ background:'var(--accent)',color:'#fff' }}>
-                                <Plus size={12} />
-                              </button>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-
-                    <div className="mb-3">
-                      <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color:'rgba(254,243,199,0.55)' }}>{lang === 'hi' ? '⚡ त्वरित राशि' : '⚡ Quick Amount'}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {([
-                          { amt:'0.25', key:'chai'      as const, bg:'rgba(20,184,166,0.18)',  color:'#14b8a6', border:'rgba(20,184,166,0.5)'  },
-                          { amt:'0.50', key:'kulhadChai'as const, bg:'rgba(234,179,8,0.18)',   color:'#d97706', border:'rgba(234,179,8,0.5)'   },
-                          { amt:'1.00', key:'combo'     as const, bg:'rgba(220,38,38,0.16)',   color:'#ef4444', border:'rgba(220,38,38,0.45)'  },
-                          { amt:'2.00', key:'kulhad'    as const, bg:'rgba(139,92,246,0.18)',  color:'#8b5cf6', border:'rgba(139,92,246,0.5)'  },
-                        ]).map(({ amt, key, bg, color, border }) => {
-                          return (
-                            <button key={amt} type="button"
-                              onClick={() => { adjustCart(key, 1); speak(`${amt} USDC`) }}
-                              className="rounded-full px-3 py-1 text-xs font-bold transition-all"
-                              style={{ background: bg, color, border:`1.5px solid ${border}` }}>
-                              +{amt} <UsdcIcon size={11} /> USDC
-                            </button>
-                          )
-                        })}
-                        <button type="button"
-                          onClick={() => {
-                            adjustCart('kulhadChai', 1)
-                            setFreeChaiPool(p => p + 1)
-                            speak(lang === 'hi' ? 'एक और कप' : 'Ek Aur Cup')
-                            toast.success(lang === 'hi' ? '🏺 एक और कप — किसी के लिए मुफ्त चाय जोड़ी गई!' : '🏺 Ek Aur Cup — a free chai added to the pool!')
-                          }}
-                          className="rounded-full px-3 py-1 text-xs font-bold transition-all"
-                          style={{ background: 'rgba(34,197,94,0.18)', color: '#22c55e', border: '1.5px solid rgba(34,197,94,0.5)' }}>
-                          🏺 {lang === 'hi' ? 'एक और कप +0.50' : 'Ek Aur Cup +0.50'}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="rounded-xl px-3 py-2.5 mb-2" style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)' }}>
-                      <div className="flex justify-between items-center mb-1">
-                        <label className="text-xs font-semibold uppercase tracking-widest" style={{ color:'rgba(254,243,199,0.55)' }}>{s.yourName} <span style={{ fontWeight:400,textTransform:'none',letterSpacing:0 }}>{s.nameOptional}</span></label>
-                        <span className="text-xs tabular-nums" style={{ color:'rgba(254,243,199,0.4)' }}>{name.length}/30</span>
-                      </div>
-                      <input type="text" maxLength={30} placeholder={s.namePlaceholder} value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-transparent text-sm outline-none" style={{ color:'#fef3c7' }} />
-                    </div>
-
-                    <div className="rounded-xl px-3 py-2.5 mb-3" style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)' }}>
-                      <div className="flex justify-between items-center mb-1">
-                        <label className="text-xs font-semibold uppercase tracking-widest" style={{ color:'rgba(254,243,199,0.55)' }}>{s.walletAddrLabel}</label>
-                        <span className="text-xs tabular-nums" style={{ color:'rgba(254,243,199,0.4)' }}>{walletAddr.length}/42</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <input type="text" maxLength={42} placeholder={s.walletAddrPlaceholder} value={walletAddr} onChange={(e) => setWalletAddr(e.target.value)} className="flex-1 bg-transparent text-sm outline-none mono" style={{ color:'#fef3c7' }} />
-                        {qrSupported && (
-                          <button type="button" onClick={() => { speak(s.scanQr); setShowQr(true) }} title={s.scanQr} className="flex-shrink-0 p-1.5 rounded-lg" style={{ background:'rgba(255,255,255,0.08)',color:'#fbbf24' }}>
-                            <QrCode size={14} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mb-3">
-                      <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color:'rgba(254,243,199,0.55)' }}>{s.vibeLabel}</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {s.vibeTags.map((tag, i) => {
-                          const isSel = vibeTag === tag
-                          return (
-                            <button key={tag} type="button" onClick={() => { setVibeTag(isSel ? null : tag); speak(tag) }}
-                              className="rounded-full px-2.5 py-1 text-xs font-semibold transition-all"
-                              style={isSel ? { background:VIBE_COLORS[i],color:VIBE_TEXT_COLORS[i],border:`1.5px solid ${VIBE_TEXT_COLORS[i]}` } : { background:'rgba(255,255,255,0.08)',color:'rgba(254,243,199,0.6)',border:'1.5px solid transparent' }}>
-                              {tag}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="rounded-xl px-3 py-2.5 mb-3" style={{ background:'rgba(255,255,255,0.06)', border:'1.5px dashed rgba(251,191,36,0.4)' }}>
-                      <label className="text-xs font-semibold uppercase tracking-widest mb-2 block" style={{ color:'rgba(254,243,199,0.6)' }}>🎟️ {s.couponLabel}</label>
-                      <div className="flex gap-2">
-                        <input type="text" value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())}
-                          onKeyDown={e => { if (e.key === 'Enter') handleApplyCoupon() }}
-                          placeholder={s.couponPlaceholder} maxLength={12}
-                          className="flex-1 bg-transparent text-sm outline-none mono font-bold uppercase"
-                          style={{ color: couponApplied ? '#4ade80' : '#fbbf24' }} />
-                        <button type="button" onClick={handleApplyCoupon} disabled={couponApplied}
-                          className="rounded-lg px-3 py-1 text-xs font-bold flex-shrink-0"
-                          style={{ background: couponApplied ? 'rgba(34,197,94,0.2)' : 'rgba(251,191,36,0.2)', color: couponApplied ? '#4ade80' : '#fbbf24', border:`1px solid ${couponApplied ? 'rgba(34,197,94,0.4)' : 'rgba(251,191,36,0.4)'}` }}>
-                          {couponApplied ? '✓' : s.couponApply}
-                        </button>
-                      </div>
-                      {couponApplied && couponDiscount > 0 && (
-                        <p className="text-xs mt-1" style={{ color:'#4ade80' }}>{s.couponSuccess(Math.round(couponDiscount * 100))}</p>
-                      )}
-                    </div>
-
-                    <div className="rounded-xl px-3 py-2.5 mb-4" style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)' }}>
-                      <div className="flex justify-between items-center mb-1">
-                        <label className="text-xs font-semibold uppercase tracking-widest" style={{ color:'rgba(254,243,199,0.55)' }}>{s.message}</label>
-                        <span className="text-xs tabular-nums" style={{ color:message.length > 72 ? 'var(--danger)' : 'rgba(254,243,199,0.4)' }}>{message.length}/80</span>
-                      </div>
-                      <textarea maxLength={80} rows={2} placeholder={s.messagePlaceholder} value={message} onChange={(e) => setMessage(e.target.value)} className="w-full bg-transparent text-sm outline-none resize-none" style={{ color:'#fef3c7' }} />
-                    </div>
-
-                    {isBusy && (
-                      <div className="mb-3 space-y-1.5">
-                        <p className="text-xs text-center" style={{ color:'var(--muted)' }}>{step === 'tipping' ? s.sendingTip : s.txPendingTip}</p>
-                        {pendingHash && (
-                          <a href={buildTxExplorerUrl(ARC_TESTNET_CHAIN_ID, pendingHash)} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1 text-xs" style={{ color:'var(--accent-hover)' }}>
-                            <span className="mono">{formatAddress(pendingHash)}</span><ExternalLink size={10} />
-                          </a>
-                        )}
-                      </div>
-                    )}
-
-                    {!isConnected ? (
-                      <ConnectButton.Custom>
-                        {({ openConnectModal }) => (
-                          <button onClick={openConnectModal}
-                            className="w-full rounded-xl py-3.5 text-sm font-bold flex items-center justify-center gap-2"
-                            style={{ background:'var(--accent)',color:'#fff' }}>
-                            <Heart size={15} />{lang === 'hi' ? '💳 वॉलेट जोड़ें — पेमेंट करें' : '💳 Connect Wallet — Pay with USDC'}
-                          </button>
-                        )}
-                      </ConnectButton.Custom>
-                    ) : isWrongChain ? (
-                      <button onClick={() => { void handleSwitchToArc() }} className="w-full rounded-xl py-3.5 text-sm font-bold" style={{ background:'var(--danger)',color:'#fff' }}>{s.switchNetwork}</button>
-                    ) : isBusy ? (
-                      <button disabled className="w-full rounded-xl py-3.5 text-sm font-bold flex items-center justify-center gap-2" style={{ background:'rgba(18,45,69,0.5)',color:'#fff',cursor:'not-allowed' }}>
-                        <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />{s.sendingTip}
-                      </button>
-                    ) : (
-                      <button onClick={() => { speak(s.sendTip(tipAmount || '0')); void handleOpenSummary() }}
-                        className="w-full rounded-xl py-3.5 text-sm font-bold flex items-center justify-center gap-2"
-                        style={{ background:'var(--accent)',color:'#fff' }}>
-                        <Heart size={15} />{s.sendTip(tipAmount || '0')}
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-4 order-3 lg:order-3">
-                <div className="rounded-2xl p-5 lg:sticky lg:top-4 overflow-hidden" style={{ background:'#fffbf0', border:'3px solid #dc2626', boxShadow:'4px 4px 0 #b45309, 0 8px 32px rgba(220,38,38,0.15)' }}>
-                  <div className="flex items-center justify-between mb-1 pb-2" style={{ borderBottom:'2px dashed #dc2626' }}>
-                    <div className="flex items-center gap-2">
-                      <ShoppingCart size={17} style={{ color:'#dc2626',flexShrink:0 }} />
-                      <p className="display text-base font-black tracking-wide" style={{ color:'#7f1d1d' }}>{lang === 'hi' ? '🎫 ऑर्डर टिकट' : '🎫 ORDER TICKET'}</p>
-                    </div>
-                    <span className="text-[10px] font-black uppercase" style={{ color:'#dc2626' }}>USDC PAY</span>
-                  </div>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color:'rgba(127,29,29,0.5)' }}>{lang === 'hi' ? 'चाय का चंदा • स्मार्ट स्टॉल' : 'CHAI KA CHANDA • SMART STALL'}</p>
-                  {!hasItems ? (
-                    <div className="text-center py-6">
-                      <p className="text-sm" style={{ color:'var(--muted)' }}>{s.cartEmpty}</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="space-y-2 mb-4">
-                        {MENU_ITEMS.filter((i) => (cart[i.key] ?? 0) > 0).map((item) => {
-                          const qty = cart[item.key] ?? 0
-                          const lineTotal = (qty * parseFloat(item.amount)).toFixed(2)
-                          return (
-                            <div key={item.key} className="flex items-center justify-between py-2" style={{ borderBottom:'1px solid rgba(0,0,0,0.05)' }}>
-                              <div className="flex items-center gap-2">
-                                <span>{item.emoji}</span>
-                                <div>
-                                  <p className="text-xs font-semibold" style={{ color:'var(--ink)' }}>{getMenuLabel(item.key, s)}</p>
-                                  <p className="text-xs tabular-nums" style={{ color:'var(--subtle)' }}>{qty} × {item.price}</p>
-                                </div>
-                              </div>
-                              <span className="text-sm font-bold tabular-nums" style={{ color:'var(--accent)' }}>{lineTotal}</span>
-                            </div>
-                          )
-                        })}
-                      </div>
-                      <div className="rounded-xl px-3 py-2.5 mb-3" style={{ background:'rgba(220,38,38,0.08)', border:'1.5px dashed #dc2626' }}>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-black" style={{ color:'#7f1d1d' }}>{s.cartTotal}</span>
-                          <div className="flex items-center gap-1">
-                            <TokenUSDC variant="branded" size={15} />
-                            <span className="text-lg font-black tabular-nums flex items-center gap-1" style={{ color:'#dc2626' }}>{totalStr} <UsdcIcon size={16} /> USDC</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="rounded-xl px-3 py-2 mb-3" style={{ background:'rgba(0,0,0,0.03)',border:'1px solid rgba(0,0,0,0.06)' }}>
-                        <div className="flex items-center gap-1.5">
-                          {fulfillment === 'delivery' ? <Bike size={13} style={{ color:'var(--muted)' }} /> : <UtensilsCrossed size={13} style={{ color:'var(--muted)' }} />}
-                          <span className="text-xs" style={{ color:'var(--muted)' }}>{fulfillment === 'delivery' ? s.fulfillmentDelivery : s.fulfillmentDineIn}</span>
-                        </div>
-                      </div>
-                      {step !== 'summary' && step !== 'done' && (
-                        !isConnected ? (
-                          <ConnectButton.Custom>
-                            {({ openConnectModal }) => (
-                              <button onClick={openConnectModal}
-                                className="w-full rounded-xl py-3.5 text-sm font-bold flex items-center justify-center gap-2"
-                                style={{ background:'var(--accent)',color:'#fff' }}>
-                                <Heart size={15} />{lang === 'hi' ? '💳 जोड़ें और पेमेंट करें' : '💳 Connect & Pay with USDC'}
-                              </button>
-                            )}
-                          </ConnectButton.Custom>
-                        ) : (
-                          <button
-                            onClick={() => { speak(s.cartPlaceOrder); void handleOpenSummary() }}
-                            disabled={isBusy || isWrongChain}
-                            className="w-full rounded-xl py-3.5 text-sm font-bold flex items-center justify-center gap-2 transition-all"
-                            style={isBusy || isWrongChain ? { background:'rgba(18,45,69,0.3)',color:'rgba(255,255,255,0.6)',cursor:'not-allowed' } : { background:'var(--accent)',color:'#fff' }}>
-                            <Heart size={15} />{s.cartPlaceOrder} — {totalStr} USDC
-                          </button>
-                        )
-                      )}
-                    </>
-                  )}
-                </div>
-
-                <div className="rounded-2xl p-5 hidden lg:block" style={{ background:'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(239,68,68,0.08))',border:'1px solid rgba(245,158,11,0.25)' }}>
-                  <p className="text-sm font-bold mb-2" style={{ color:'#92400e' }}>{lang === 'hi' ? "✨ आज का स्पेशल" : "✨ Today's Special"}</p>
-                  <p className="text-xs mb-1" style={{ color:'#78350f' }}>🍵🥟 {lang === 'hi' ? 'कॉम्बो ऑफर — 1.50 USDC' : 'Combo Offer — 1.50 USDC'}</p>
-                  <p className="text-xs mb-1" style={{ color:'#78350f' }}>🏺 {lang === 'hi' ? 'कुल्हड़ स्पेशल — 2.50 USDC' : 'Kulhad Special — 2.50 USDC'}</p>
-                  <p className="text-xs mt-3 font-semibold" style={{ color:'#92400e' }}>{lang === 'hi' ? '🌸 ताज़ी इलायची चाय हर घंटे' : '🌸 Fresh elaichi chai every hour'}</p>
-                </div>
-              </div>
-
-            </div>
-
-          <p className="text-center text-xs mt-6 mb-20 sm:mb-6" style={{ color:'var(--subtle)' }}>
-            <a href={`${arcChain.explorerBase}/address/${TIPJAR.address}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:underline">
-              <ArrowDownToLine size={11} />{s.contractLink}
-            </a>
-          </p>
-        </div>
-      </div>
-
-      {hasItems && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden" style={{ background:'#fffbf0', borderTop:'2px solid #dc2626', boxShadow:'0 -4px 24px rgba(220,38,38,0.18)' }}>
-          <div className="max-w-7xl mx-auto px-3 sm:px-5 py-2.5 flex items-center gap-3">
-            <div className="flex items-center gap-1.5 flex-1 min-w-0">
-              <span className="text-base">🧾</span>
-              <div className="min-w-0">
-                <p className="text-xs font-black truncate" style={{ color:'#7f1d1d' }}>
-                  {totalItems} {lang === 'hi' ? 'आइटम' : totalItems === 1 ? 'item' : 'items'}
-                </p>
-                <p className="text-xs font-semibold tabular-nums" style={{ color:'#dc2626' }}>{totalStr} USDC</p>
-              </div>
-            </div>
-            {isConnected ? (
-              isWrongChain ? (
-                <button onClick={() => { void handleSwitchToArc() }}
-                  className="flex-shrink-0 rounded-xl px-4 py-2 text-sm font-black"
-                  style={{ background:'#dc2626', color:'#fff' }}>
-                  {s.switchNetwork}
-                </button>
-              ) : (
-                <button onClick={() => { void handleOpenSummary() }} disabled={isBusy}
-                  className="flex-shrink-0 rounded-xl px-4 py-2 text-sm font-black flex items-center gap-1.5"
-                  style={{ background:'linear-gradient(135deg,#b45309,#dc2626)', color:'#fff', opacity: isBusy ? 0.6 : 1 }}>
-                  <ShoppingCart size={14} />{lang === 'hi' ? 'चेकआउट' : 'Checkout'}
-                </button>
-              )
-            ) : (
-              <ConnectButton.Custom>
-                {({ openConnectModal }) => (
-                  <button onClick={openConnectModal}
-                    className="flex-shrink-0 rounded-xl px-4 py-2 text-sm font-black"
-                    style={{ background:'linear-gradient(135deg,#b45309,#dc2626)', color:'#fff' }}>
-                    {lang === 'hi' ? '🔗 वॉलेट जोड़ें' : '🔗 Connect'}
-                  </button>
-                )}
-              </ConnectButton.Custom>
-            )}
-          </div>
-        </div>
-      )}
-    </>
-  )
-}
-
-export default function TipJarApp() {
-  return <ErrorBoundary><TipJarInner /></ErrorBoundary>
-}
+                  <div id="sec-menu" className="rounded-2xl p-5 overflow-hidden" style={{ background:'linear-gradient(160deg,#1c1917,#292524)', border:'2px solid rgba(251,191,36,0.35)', boxShadow:'0 8px 32px rgba(0,0,0,0.35)' }}>
+                    <div className="flex items-c
