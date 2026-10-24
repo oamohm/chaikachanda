@@ -36,11 +36,19 @@ import {
   Sparkles,
   Milk,
   Music,
+  Home,
+  ShieldCheck,
+  Globe,
+  Briefcase,
+  UserCheck,
+  Compass,
+  Package,
+  Award,
+  HelpCircle,
 } from 'lucide-react'
-import { requireChain, buildTxExplorerUrl } from '@/onchain-facts'
+import { requireChain } from '@/onchain-facts'
 import { Amount } from '@/onchain-money'
 import { type Lang, strings, loadLang, saveLang } from '@/i18n'
-import { purgeWagmiCache } from '@/safe-storage'
 import { useSpeech } from '@/hooks/useSpeech'
 import QrScanner, { qrScanSupported } from './QrScanner'
 import tipJarArtifact from '../../contracts/out/TipJar.sol/TipJar.json'
@@ -68,15 +76,13 @@ const arcPublicClient = createPublicClient({
 const NATIVE_DECIMALS = 18
 const ERC20_DECIMALS = 6
 const SCALE = BigInt(1e12)
-const MINIMUM_DISPLAY = 0.1
 const FAUCET_URL = 'https://faucet.circle.com'
-const LOW_BALANCE_THRESHOLD = 2
 
 function toNative(erc20Amount: bigint): bigint { return erc20Amount * SCALE }
 function parseErc20(amount: string): bigint { try { return parseUnits(amount, ERC20_DECIMALS) } catch { return 0n } }
 function formatNativeUsdc(raw: bigint): string { return Amount.fromRaw(raw, NATIVE_DECIMALS).toFixed(2) }
 
-// ── Authentic USDC Web3 SVG Icon ───────────────────────────────────────────────
+// ── Web3 Authentic USDC SVG Icon ───────────────────────────────────────────────
 function UsdcIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"
@@ -88,7 +94,7 @@ function UsdcIcon({ size = 16 }: { size?: number }) {
   )
 }
 
-// ── Menu ───────────────────────────────────────────────────────────────────────
+// ── Menu Data Structure ────────────────────────────────────────────────────────
 interface MenuItem {
   key: 'chai' | 'kulhadChai' | 'milk' | 'masalaChai' | 'samosa' | 'kachori' | 'lassi' | 'aloo' | 'combo' | 'kulhad'
   emoji: string
@@ -155,23 +161,8 @@ interface Merchant {
   name: string; handle: string; emoji: string
   address: `0x${string}`; defaultAmount: string
 }
-const MERCHANTS: Merchant[] = [
-  { name: 'Ramesh Chaiwala',   handle: '@ramesh_chai',   emoji: '☕', address: TIPJAR.address, defaultAmount: '0.5' },
-  { name: 'Sunita Samosawali', handle: '@sunita_samosa', emoji: '🥟', address: TIPJAR.address, defaultAmount: '1'   },
-  { name: 'Arun Kulhadwala',   handle: '@arun_kulhad',   emoji: '🏺', address: TIPJAR.address, defaultAmount: '2.5' },
-  { name: 'Priya Chai Corner', handle: '@priya_corner',  emoji: '🍵', address: TIPJAR.address, defaultAmount: '1.5' },
-]
 
 type Fulfillment = 'delivery' | 'dine-in'
-
-interface MyOrder {
-  txHash: `0x${string}`
-  amount: string
-  message: string
-  fulfillment: Fulfillment
-  cartLine: string
-  timestamp: number
-}
 
 function formatAddress(addr: string): string {
   if (!addr || addr.length < 10) return addr
@@ -187,22 +178,19 @@ function parseOnchainError(error: unknown, lang: Lang): string {
   return s.errDefault
 }
 
-const glass = {
-  card: {
-    background: 'rgba(28, 25, 23, 0.88)',
-    border: '1.5px solid rgba(251, 191, 36, 0.35)',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-    color: '#fef3c7',
-  } as React.CSSProperties,
-}
-const spectral = 'linear-gradient(90deg, #5fbeff, #af8ff4, #f05c6b, #ffcd83, #7ef1b3)'
+const glassCardStyle = {
+  background: 'linear-gradient(145deg, rgba(30, 27, 26, 0.95), rgba(20, 18, 17, 0.98))',
+  border: '1.5px solid rgba(251, 191, 36, 0.35)',
+  boxShadow: '0 12px 36px rgba(0,0,0,0.6)',
+  color: '#fef3c7',
+} as React.CSSProperties
 
-// ── Policy-Compliant Desi Jukebox (YouTube Official Embed Player & Dropdown) ──
+// ── Policy-Compliant Desi Jukebox ──
 const JUKEBOX_SONGS = [
   { title: 'Chaiyya Chaiyya (Dil Se)', videoId: 'YOpx_pKynSw' },
   { title: 'Ek Garam Chai Ki Pyali Ho', videoId: '6Xm-K8V4QZ0' },
-  { title: 'Kajra Re & Chai Vibes', videoId: 'O40748uJsBc' },
   { title: 'Desi Lo-Fi Chai Beats', videoId: '5qap5aO4i9A' },
+  { title: 'Kajra Re & Chai Vibes', videoId: 'O40748uJsBc' },
 ]
 
 function DesiJukeboxWidget({ lang }: { lang: Lang }) {
@@ -210,7 +198,7 @@ function DesiJukeboxWidget({ lang }: { lang: Lang }) {
   const [playing, setPlaying] = useState(false)
 
   return (
-    <div className="rounded-2xl p-5" style={{ background: 'linear-gradient(135deg,#1e1b4b,#312e81)', border: '2px solid rgba(99,102,241,0.4)', boxShadow: '0 6px 24px rgba(99,102,241,0.25)' }}>
+    <div id="jukebox-section" className="rounded-2xl p-5" style={{ background: 'linear-gradient(135deg,#1e1b4b,#312e81)', border: '2px solid rgba(99,102,241,0.4)', boxShadow: '0 6px 24px rgba(99,102,241,0.25)' }}>
       <div className="flex items-center gap-3 mb-3">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(99,102,241,0.35)' }}>
           <Music size={20} className="text-indigo-300" />
@@ -240,7 +228,6 @@ function DesiJukeboxWidget({ lang }: { lang: Lang }) {
         </button>
       </div>
 
-      {/* Official YouTube Embed Player adhering strictly to API and copyright policies */}
       {playing && (
         <div className="mt-3 overflow-hidden rounded-xl" style={{ height: 80 }}>
           <iframe
@@ -270,12 +257,12 @@ function MerchantQrModal({ merchant, onClose, closeLabel, title }: {
     }).catch(() => {})
   }, [qrValue])
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}>
-      <div className="rounded-2xl p-6 text-center max-w-sm w-full" style={{ background: '#1c1917', border: '1.5px solid #fbbf24', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
-        <p className="font-bold text-base mb-1" style={{ color: '#fbbf24' }}>{title}</p>
-        <p className="text-sm mb-3" style={{ color: '#fef3c7' }}>{merchant.emoji} {merchant.name}</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
+      <div className="rounded-2xl p-6 text-center max-w-sm w-full bg-stone-900 border border-amber-500">
+        <p className="font-bold text-base mb-1 text-amber-400">{title}</p>
+        <p className="text-sm mb-3 text-amber-100">{merchant.emoji} {merchant.name}</p>
         <div className="flex justify-center mb-4"><canvas ref={canvasRef} style={{ borderRadius: 12 }} /></div>
-        <p className="mono text-xs mb-4 break-all p-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.06)', color: '#fde68a' }}>{merchant.address}</p>
+        <p className="mono text-xs mb-4 break-all p-2 rounded-lg bg-stone-800 text-amber-200">{merchant.address}</p>
         <button onClick={onClose} className="w-full rounded-xl py-3 text-sm font-bold bg-amber-600 text-white">{closeLabel}</button>
       </div>
     </div>
@@ -300,35 +287,11 @@ function ChaiPhilosophyCard({ lang }: { lang: Lang }) {
   )
 }
 
-function RegisterMerchantModal({ onClose, onRegister, lang }: {
-  onClose: () => void; onRegister: (m: Merchant) => void; lang: Lang
-}) {
-  const [rName, setRName] = useState('')
-  const [rAddress, setRAddress] = useState('')
-  const handleSubmit = () => {
-    if (!rName.trim() || !/^0x[0-9a-fA-F]{40}$/.test(rAddress.trim())) return
-    onRegister({ name: rName.trim(), handle: `@${rName.trim().toLowerCase().replace(/\s+/g, '_')}`, emoji: '☕', address: rAddress.trim() as `0x${string}`, defaultAmount: '0.5' })
-  }
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)' }}>
-      <div className="rounded-2xl p-6 w-full max-w-md bg-stone-900 border border-amber-500">
-        <p className="font-black text-lg mb-4 text-amber-400">{lang === 'hi' ? '🏪 नया व्यापारी जोड़ें' : '🏪 Register Merchant'}</p>
-        <input value={rName} onChange={(e) => setRName(e.target.value)} placeholder="Name" className="w-full mb-3 rounded-xl px-3 py-2 text-sm bg-stone-800 text-white outline-none" />
-        <input value={rAddress} onChange={(e) => setRAddress(e.target.value)} placeholder="0x Wallet Address" className="w-full mb-4 rounded-xl px-3 py-2 text-xs bg-stone-800 text-white outline-none font-mono" />
-        <div className="flex gap-2">
-          <button onClick={onClose} className="flex-1 py-2 rounded-xl bg-stone-800 text-white text-sm">Cancel</button>
-          <button onClick={handleSubmit} className="flex-1 py-2 rounded-xl bg-amber-600 text-white text-sm font-bold">Register</button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function KulhadNftModal({ lang, onClose }: { lang: Lang; onClose: () => void }) {
   const s = strings[lang]
   const [claimed, setClaimed] = useState(false)
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
       <div className="rounded-3xl p-6 w-full max-w-sm text-center bg-indigo-950 border border-indigo-400">
         <div className="text-5xl mb-2">🏺</div>
         <p className="font-black text-xl mb-1 text-indigo-100">{s.nftPassTitle}</p>
@@ -347,7 +310,7 @@ function RoyaltyConsole({ lang, onClose, royaltyKey, setRoyaltyKey, royaltyUnloc
 }) {
   const s = strings[lang]
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
       <div className="rounded-3xl p-6 w-full max-w-md bg-slate-900 border border-amber-500">
         <div className="flex justify-between items-center mb-4">
           <p className="font-black text-base text-amber-400">🔑 {s.royaltyTitle}</p>
@@ -425,7 +388,7 @@ function VillageBanner({ lang, onNftClick, onRoyaltyClick, onEmergencyClick, onB
 function EmergencyAssistModal({ lang, onClose, onPay }: { lang: Lang; onClose: () => void; onPay: (type: string) => void }) {
   const [selected, setSelected] = useState<string | null>(null)
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
       <div className="rounded-2xl p-6 w-full max-w-sm bg-indigo-950 border border-purple-500">
         <p className="font-black text-lg mb-3 text-purple-200">🚨 {lang === 'hi' ? 'इमरजेंसी क्विक मदद' : 'Emergency Quick Assist'}</p>
         <div className="grid grid-cols-2 gap-2 mb-4">
@@ -443,7 +406,7 @@ function BaithakBookingModal({ lang, onClose, onBook }: { lang: Lang; onClose: (
   const [slot] = useState('9:00 AM')
   const [seat] = useState('Khat')
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
       <div className="rounded-2xl p-6 w-full max-w-sm bg-emerald-950 border border-emerald-500">
         <p className="font-black text-lg mb-3 text-emerald-100">🪑 {lang === 'hi' ? 'बैठक रिज़र्व करें' : 'Book a Baithak'}</p>
         <button onClick={() => { onBook(slot, seat); onClose() }} className="w-full py-3 rounded-xl font-bold bg-emerald-600 text-white text-sm">Confirm Booking (0.50 USDC)</button>
@@ -455,7 +418,7 @@ function BaithakBookingModal({ lang, onClose, onBook }: { lang: Lang; onClose: (
 function GiftChaiModal({ lang, onClose, onGift }: { lang: Lang; onClose: () => void; onGift: (to: string, item: string) => void }) {
   const [to, setTo] = useState('')
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
       <div className="rounded-2xl p-6 w-full max-w-sm bg-amber-950 border border-amber-500">
         <p className="font-black text-lg mb-3 text-amber-100">🎁 {lang === 'hi' ? 'दोस्त को चाय गिफ्ट करें' : 'Gift a Chai'}</p>
         <input value={to} onChange={e => setTo(e.target.value)} placeholder="0x... or @handle" className="w-full mb-3 rounded-xl px-3 py-2 text-sm bg-stone-900 text-white outline-none border border-amber-700" />
@@ -467,9 +430,7 @@ function GiftChaiModal({ lang, onClose, onGift }: { lang: Lang; onClose: () => v
 
 function TipJarInner() {
   const { address, isConnected, chainId } = useAccount()
-  const { error: connectError } = useConnect()
   const { data: walletClient } = useWalletClient()
-  const publicClient = usePublicClient()
   const { switchChain } = useSwitchChain()
 
   const { data: balanceData, refetch: refetchBalance } = useBalance({
@@ -492,8 +453,8 @@ function TipJarInner() {
 
   const [name, setName] = useState('')
   const [walletAddr, setWalletAddr] = useState('')
-  const [message, setMessage] = useState('')
-  const [vibeTag, setVibeTag] = useState<string | null>(null)
+  const [message] = useState('')
+  const [vibeTag] = useState<string | null>(null)
 
   const [step, setStep] = useState<'idle' | 'summary' | 'tipping' | 'pending-tip' | 'timed-out' | 'done'>('idle')
   const [pendingHash, setPendingHash] = useState<`0x${string}` | null>(null)
@@ -501,16 +462,13 @@ function TipJarInner() {
   const [showQr, setShowQr] = useState(false)
   const qrSupported = qrScanSupported()
   const [copied, setCopied] = useState(false)
-  const [userBalanceDisplay, setUserBalanceDisplay] = useState<string | null>(null)
-  const [showMerchants, setShowMerchants] = useState(false)
+  const [, setUserBalanceDisplay] = useState<string | null>(null)
   const [qrMerchant, setQrMerchant] = useState<Merchant | null>(null)
   const [showRegisterMerchant, setShowRegisterMerchant] = useState(false)
   const [showEmergency, setShowEmergency] = useState(false)
   const [showBaithak, setShowBaithak] = useState(false)
   const [showGiftChai, setShowGiftChai] = useState(false)
-  const [merchants, setMerchants] = useState<Merchant[]>(MERCHANTS)
-  const [couponCode, setCouponCode] = useState('')
-  const [couponApplied, setCouponApplied] = useState(false)
+  const [, setMerchants] = useState<Merchant[]>([])
   const [showNftPass, setShowNftPass] = useState(false)
   const [showRoyaltyConsole, setShowRoyaltyConsole] = useState(false)
   const [royaltyKey, setRoyaltyKey] = useState('')
@@ -518,7 +476,7 @@ function TipJarInner() {
     try { return localStorage.getItem('chayChanda_royaltyUnlocked') === 'true' } catch { return false }
   })
   const [royaltyKeyError, setRoyaltyKeyError] = useState(false)
-  const [freeChaiPool, setFreeChaiPool] = useState(0)
+  const [freeChaiPool] = useState(0)
 
   const [totalCollected, setTotalCollected] = useState<bigint | null>(null)
   const [tipsCount, setTipsCount] = useState<bigint | null>(null)
@@ -538,8 +496,6 @@ function TipJarInner() {
   useEffect(() => { refetchAllRef.current = refetchAll }, [refetchAll])
 
   const finalMessage = (vibeTag ? `${vibeTag} — ` : '') + (message.trim() || cartSummaryLine(cart, s, lang).slice(0, 60))
-  const finalMessageRef = useRef(finalMessage)
-  useEffect(() => { finalMessageRef.current = finalMessage }, [finalMessage])
 
   useEffect(() => {
     if (step !== 'pending-tip' || !pendingHash) return
@@ -633,6 +589,7 @@ function TipJarInner() {
   const formattedTotal = totalCollected != null ? formatNativeUsdc(totalCollected) : '0.00'
   const displayTotal = isConnected ? formattedTotal : '0.00'
   const displayTipCount = isConnected && tipsCount != null ? Number(tipsCount) : 0
+  const totalItems = Object.values(cart).reduce((a, b) => a + (b || 0), 0)
 
   return (
     <>
@@ -645,12 +602,12 @@ function TipJarInner() {
       {showGiftChai && <GiftChaiModal lang={lang} onClose={() => setShowGiftChai(false)} onGift={(to) => toast.success(`🎁 Gift sent to ${to}!`)} />}
       {qrMerchant && <MerchantQrModal merchant={qrMerchant} onClose={() => setQrMerchant(null)} closeLabel={s.merchantQrClose} title={s.merchantQrTitle} />}
 
-      <div className="relative min-h-dvh overflow-hidden text-amber-50" style={{ background: 'linear-gradient(180deg, #18181b 0%, #09090b 100%)' }}>
+      <div className="relative min-h-dvh overflow-hidden text-amber-50 pb-20 sm:pb-12" style={{ background: 'linear-gradient(180deg, #18181b 0%, #09090b 100%)' }}>
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 pt-6">
 
           <VillageBanner lang={lang} onNftClick={() => setShowNftPass(true)} onRoyaltyClick={() => setShowRoyaltyConsole(true)} onEmergencyClick={() => setShowEmergency(true)} onBaithakClick={() => setShowBaithak(true)} onGiftClick={() => setShowGiftChai(true)} freeChaiPool={freeChaiPool} onSelectMilk={() => adjustCart('milk', 1)} onSelectKulhad={() => adjustCart('kulhad', 1)} />
 
-          <header className="mb-6 flex items-center justify-between gap-4 flex-wrap p-4 rounded-2xl" style={{ background: 'rgba(28, 25, 23, 0.9)', border: '1px solid rgba(251,191,36,0.3)' }}>
+          <header className="mb-6 flex items-center justify-between gap-4 flex-wrap p-4 rounded-2xl bg-stone-900/90 border border-amber-500/30">
             <div className="flex items-center gap-3">
               <Coffee size={24} className="text-amber-400" />
               <div>
@@ -661,7 +618,7 @@ function TipJarInner() {
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex rounded-xl overflow-hidden text-xs font-bold border border-amber-500/30">
                 {(['hi','en'] as Lang[]).map((l) => (
-                  <button key={l} onClick={() => setLangState(l); saveLang(l)} className="px-3.5 py-2" style={lang === l ? { background:'#d97706',color:'#fff' } : { background:'rgba(255,255,255,0.05)',color:'#a3a3a3' }}>
+                  <button key={l} onClick={() => { setLangState(l); saveLang(l) }} className="px-3.5 py-2" style={lang === l ? { background:'#d97706',color:'#fff' } : { background:'rgba(255,255,255,0.05)',color:'#a3a3a3' }}>
                     {l === 'hi' ? 'हिन्दी' : 'English'}
                   </button>
                 ))}
@@ -686,7 +643,7 @@ function TipJarInner() {
                 <ChaiPhilosophyCard lang={lang} />
                 <DesiJukeboxWidget lang={lang} />
 
-                <div className="rounded-2xl p-6" style={glass.card}>
+                <div className="rounded-2xl p-6" style={glassCardStyle}>
                   <p className="text-xs font-bold uppercase tracking-widest mb-2 text-amber-400">{s.totalCollected}</p>
                   <div className="flex items-end gap-2 mb-2">
                     <span className="display text-5xl font-black tabular-nums text-amber-200">{displayTotal}</span>
@@ -705,7 +662,7 @@ function TipJarInner() {
                   </div>
                   <div className="mt-4 pt-3 border-t border-amber-500/20">
                     <p className="text-xs font-bold mb-1 text-amber-300">Target Receiver (Permanent)</p>
-                    <div className="flex items-center gap-2 bg-amber-950/40 p-2.5 rounded-xl border border-amber-500/30">
+                    <div className="flex items-center gap-2 bg-amber-950/60 p-2.5 rounded-xl border border-amber-500/30">
                       <span className="mono text-xs font-bold text-amber-200 truncate">{TIPJAR.address}</span>
                       <button onClick={() => void handleCopyOwner()} title={s.copied} className="ml-auto p-1.5 rounded-lg bg-amber-800/50 text-amber-200">
                         {copied ? <Check size={14} /> : <Copy size={14} />}
@@ -728,7 +685,7 @@ function TipJarInner() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl p-6 overflow-hidden" style={{ background:'linear-gradient(160deg,#1c1917,#292524)', border:'2px solid rgba(251,191,36,0.4)' }}>
+                <div className="rounded-2xl p-6 overflow-hidden bg-stone-900/90 border border-amber-500/40">
                   <div className="flex items-center gap-3 mb-2 pb-3 border-b border-amber-500/30">
                     <span className="text-3xl">🚂</span>
                     <div>
@@ -774,18 +731,18 @@ function TipJarInner() {
 
               {/* Column 3: Live Order Receipt Ticket & QR Scanner Widget */}
               <div className="space-y-5 order-3 lg:order-3">
-                <div className="rounded-2xl p-6 lg:sticky lg:top-6 overflow-hidden" style={{ background:'#fffbf0', border:'3px solid #dc2626', boxShadow:'6px 6px 0 #b45309' }}>
-                  <div className="flex items-center justify-between mb-2 pb-3" style={{ borderBottom:'2px dashed #dc2626' }}>
+                <div className="rounded-2xl p-6 lg:sticky lg:top-6 overflow-hidden bg-stone-900/95 border-2 border-amber-500 shadow-2xl">
+                  <div className="flex items-center justify-between mb-2 pb-3 border-b border-amber-500/30">
                     <div className="flex items-center gap-2">
-                      <ShoppingCart size={20} style={{ color:'#dc2626' }} />
-                      <p className="display text-lg font-black tracking-wide" style={{ color:'#7f1d1d' }}>{lang === 'hi' ? '🎫 ऑर्डर टिकट' : '🎫 ORDER TICKET'}</p>
+                      <ShoppingCart size={20} className="text-amber-400" />
+                      <p className="display text-lg font-black tracking-wide text-amber-200">{lang === 'hi' ? '🎫 ऑर्डर टिकट' : '🎫 ORDER TICKET'}</p>
                     </div>
-                    <span className="text-xs font-black uppercase flex items-center gap-1" style={{ color:'#dc2626' }}><UsdcIcon size={14} /> USDC PAY</span>
+                    <span className="text-xs font-black uppercase flex items-center gap-1 text-amber-400"><UsdcIcon size={14} /> USDC PAY</span>
                   </div>
 
                   {!hasItems ? (
                     <div className="text-center py-8">
-                      <p className="text-sm font-bold" style={{ color:'#7f1d1d' }}>{s.cartEmpty}</p>
+                      <p className="text-sm font-bold text-amber-200/60">{s.cartEmpty}</p>
                     </div>
                   ) : (
                     <>
@@ -794,26 +751,26 @@ function TipJarInner() {
                           const qty = cart[item.key] ?? 0
                           const lineTotal = (qty * parseFloat(item.amount)).toFixed(2)
                           return (
-                            <div key={item.key} className="flex items-center justify-between py-2 border-b border-amber-900/10">
+                            <div key={item.key} className="flex items-center justify-between py-2 border-b border-stone-800">
                               <div className="flex items-center gap-2">
                                 <span className="text-xl">{item.emoji}</span>
                                 <div>
-                                  <p className="text-sm font-bold" style={{ color:'#7f1d1d' }}>{getMenuLabel(item.key, s, lang)}</p>
-                                  <p className="text-xs tabular-nums font-semibold" style={{ color:'#b45309' }}>{qty} × {item.price}</p>
+                                  <p className="text-sm font-bold text-amber-100">{getMenuLabel(item.key, s, lang)}</p>
+                                  <p className="text-xs tabular-nums font-semibold text-amber-400/80">{qty} × {item.price}</p>
                                 </div>
                               </div>
-                              <span className="text-base font-black tabular-nums flex items-center gap-1" style={{ color:'#dc2626' }}>{lineTotal} <UsdcIcon size={13} /></span>
+                              <span className="text-base font-black tabular-nums flex items-center gap-1 text-amber-300">{lineTotal} <UsdcIcon size={13} /></span>
                             </div>
                           )
                         })}
                       </div>
 
-                      <div className="rounded-xl p-3.5 mb-4 bg-red-100/80 border-2 border-dashed border-red-500 flex items-center justify-between">
-                        <span className="text-base font-black" style={{ color:'#7f1d1d' }}>{s.cartTotal}</span>
-                        <span className="text-xl font-black tabular-nums text-red-600 flex items-center gap-1">{totalStr} <UsdcIcon size={16} /> USDC</span>
+                      <div className="rounded-xl p-3.5 mb-4 bg-amber-950/40 border-2 border-dashed border-amber-500/50 flex items-center justify-between">
+                        <span className="text-base font-black text-amber-200">{s.cartTotal}</span>
+                        <span className="text-xl font-black tabular-nums text-amber-400 flex items-center gap-1">{totalStr} <UsdcIcon size={16} /> USDC</span>
                       </div>
 
-                      <button onClick={() => void handleTip()} disabled={isBusy || isWrongChain} className="w-full rounded-xl py-4 text-base font-black flex items-center justify-center gap-2 bg-red-600 text-white hover:bg-red-700">
+                      <button onClick={() => void handleTip()} disabled={isBusy || isWrongChain} className="w-full rounded-xl py-4 text-base font-black flex items-center justify-center gap-2 bg-amber-600 text-white hover:bg-amber-500 transition-all">
                         <Sparkles size={18} />{s.cartPlaceOrder} — {totalStr} USDC
                       </button>
                     </>
@@ -839,6 +796,27 @@ function TipJarInner() {
               <ArrowDownToLine size={12} />{s.contractLink}
             </a>
           </p>
+        </div>
+
+        {/* 📱 Mobile Sticky Bottom Navigation Bar */}
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-stone-950/95 border-t border-amber-500/30 px-4 py-2 flex items-center justify-around backdrop-blur-md">
+          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex flex-col items-center gap-0.5 text-amber-400">
+            <Home size={18} />
+            <span className="text-[10px] font-bold">{lang === 'hi' ? 'होम' : 'Home'}</span>
+          </button>
+          <button onClick={() => { const el = document.getElementById('jukebox-section'); el?.scrollIntoView({ behavior: 'smooth' }) }} className="flex flex-col items-center gap-0.5 text-indigo-400">
+            <Music size={18} />
+            <span className="text-[10px] font-bold">{lang === 'hi' ? 'गाने' : 'Jukebox'}</span>
+          </button>
+          <button onClick={() => setShowQr(true)} className="flex flex-col items-center gap-0.5 text-amber-400">
+            <QrCode size={18} />
+            <span className="text-[10px] font-bold">{lang === 'hi' ? 'स्कैन' : 'Scan QR'}</span>
+          </button>
+          <button onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })} className="flex flex-col items-center gap-0.5 text-red-400 relative">
+            <ShoppingCart size={18} />
+            {totalItems > 0 && <span className="absolute -top-1 -right-2 w-4 h-4 rounded-full bg-red-600 text-white text-[9px] font-black flex items-center justify-center">{totalItems}</span>}
+            <span className="text-[10px] font-bold">{lang === 'hi' ? 'ऑर्डर' : 'Cart'}</span>
+          </button>
         </div>
       </div>
     </>
