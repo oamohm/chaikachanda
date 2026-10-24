@@ -1,0 +1,1063 @@
+import { useState, useEffect, useCallback, useRef } from 'react'
+import '../ChaiChainStyle.css'
+import { useModal } from 'connectkit'
+import { useAccount, useWalletClient } from 'wagmi'
+import { parseEther, formatEther, type Hex } from 'viem'
+import { createPublicClient, http } from 'viem'
+import { toast } from 'sonner'
+
+// ─── Bilingual strings ────────────────────────────────────────────────────────
+const STR = {
+  hi: {
+    title: 'माधु चाय वाला', sub: 'Madhu Chai Wala', tagline: 'माटी की खुशबू, अपनों का प्यार',
+    connect: 'वॉलेट जोड़ें', dineIn: '🪑 यहाँ बैठो', takeaway: '🛍️ ले जाओ',
+    totalCollected: 'कुल जमा', orders: 'ऑर्डर', placeOrder: '☕ ऑर्डर दो & पेमेंट करो',
+    tipTitle: '🏺 टिप दो — चायवाले को प्यार', bahiTitle: 'बही-खाता', bahiSub: 'ऑन-चेन लेजर',
+    couponTitle: '🎟️ कूपन कोड', giftTitle: 'गिफ़्ट चाय भेजो', giftTitleHi: 'किसी को चाय पिलाओ 🍵',
+    giftTo: 'किसको भेजें? (wallet address)', giftSend: '🎁 गिफ़्ट चाय भेजो',
+    noEntries: 'अभी कोई ट्रांजेक्शन नहीं।',
+  },
+  en: {
+    title: 'Madhu Chai Wala', sub: 'माधु चाय वाला', tagline: "Clay's fragrance, loved ones' care",
+    connect: 'Connect Wallet', dineIn: '🪑 Dine In', takeaway: '🛍️ Takeaway',
+    totalCollected: 'Total Collected', orders: 'Orders', placeOrder: '☕ Place Order & Pay',
+    tipTitle: '🏺 Leave a Tip', bahiTitle: 'Bahi-Khata', bahiSub: 'On-Chain Ledger',
+    couponTitle: '🎟️ Coupon Code', giftTitle: 'Gift a Chai', giftTitleHi: 'Send someone a cup 🍵',
+    giftTo: "Recipient's wallet address", giftSend: '🎁 Send Gift Chai',
+    noEntries: 'No transactions yet.',
+  },
+} as const
+type Lang = 'hi' | 'en'
+
+// ─── Chain & Contract Constants ───────────────────────────────────────────────
+const ARC_CHAIN_ID = 5042002
+const ARC_RPC      = 'https://rpc.testnet.arc.network'
+const EXPLORER     = 'https://explorer.testnet.arc.io'
+const OWNER        = '0x1C248d40eeA69a4662AF4F475D8dbA06d556f628' as const
+
+const TAPRI = {
+  address: '0x4fec0f358849a656b7ca35e42d13beabf501cf7c' as Hex,
+  abi: [
+    { name: 'placeOrder',      type: 'function', stateMutability: 'payable',     inputs: [{ name: 'buyerName', type: 'string' }, { name: 'items', type: 'string' }], outputs: [] },
+    { name: 'totalCollected',  type: 'function', stateMutability: 'view',        inputs: [], outputs: [{ type: 'uint256' }] },
+    { name: 'orderCount',      type: 'function', stateMutability: 'view',        inputs: [], outputs: [{ type: 'uint256' }] },
+    { name: 'withdraw',        type: 'function', stateMutability: 'nonpayable',  inputs: [], outputs: [] },
+    { type: 'event', name: 'OrderPlaced', inputs: [{ name: 'buyer', type: 'address', indexed: true }, { name: 'amount', type: 'uint256' }, { name: 'buyerName', type: 'string' }, { name: 'items', type: 'string' }, { name: 'orderId', type: 'uint256', indexed: true }] },
+  ] as const,
+}
+
+const DAIRY = {
+  address: '0x4a858900bc8422010484e5ca78e13916ae71dc6b' as Hex,
+  abi: [
+    { name: 'addEntry',      type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'productType', type: 'uint8' }, { name: 'quantityMl', type: 'uint256' }, { name: 'priceWei', type: 'uint256' }, { name: 'note', type: 'string' }], outputs: [] },
+    { name: 'getEntry',      type: 'function', stateMutability: 'view',       inputs: [{ name: 'id', type: 'uint256' }], outputs: [{ name: '', type: 'tuple', components: [{ name: 'productType', type: 'uint8' }, { name: 'quantityMl', type: 'uint256' }, { name: 'priceWei', type: 'uint256' }, { name: 'timestamp', type: 'uint256' }, { name: 'note', type: 'string' }] }] },
+    { name: 'getEntryCount', type: 'function', stateMutability: 'view',       inputs: [], outputs: [{ type: 'uint256' }] },
+  ] as const,
+}
+
+const VAULT = {
+  address: '0x504100f44301691c4f45f7822ba5dea958f5b361' as Hex,
+  abi: [
+    { name: 'deposit',            type: 'function', stateMutability: 'payable',    inputs: [], outputs: [] },
+    { name: 'requestWithdrawal',  type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'amount', type: 'uint256' }], outputs: [] },
+    { name: 'approveWithdrawal',  type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'id', type: 'uint256' }], outputs: [] },
+    { name: 'executeWithdrawal',  type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'id', type: 'uint256' }], outputs: [] },
+    { name: 'cancelWithdrawal',   type: 'function', stateMutability: 'nonpayable', inputs: [{ name: 'id', type: 'uint256' }], outputs: [] },
+    { name: 'claim',              type: 'function', stateMutability: 'nonpayable', inputs: [], outputs: [] },
+    { name: 'deposits',           type: 'function', stateMutability: 'view',       inputs: [{ name: '', type: 'address' }], outputs: [{ type: 'uint256' }] },
+    { name: 'claimable',          type: 'function', stateMutability: 'view',       inputs: [{ name: '', type: 'address' }], outputs: [{ type: 'uint256' }] },
+    { name: 'withdrawalRequests', type: 'function', stateMutability: 'view',       inputs: [{ name: '', type: 'uint256' }], outputs: [{ name: 'depositor', type: 'address' }, { name: 'amount', type: 'uint256' }, { name: 'approvalCount', type: 'uint8' }, { name: 'executed', type: 'bool' }, { name: 'deadline', type: 'uint256' }] },
+  ] as const,
+}
+
+// ─── Shared public client ─────────────────────────────────────────────────────
+const arcClient = createPublicClient({ transport: http(ARC_RPC) })
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function shortAddr(a: string) { return `${a.slice(0, 6)}…${a.slice(-4)}` }
+function fmt(wei: bigint) { return Number(formatEther(wei)).toFixed(4) }
+function explorerTx(tx: string) { return `${EXPLORER}/tx/${tx}` }
+
+const PRODUCT_LABELS = ['🥛 Milk', '🧈 Ghee', '🧀 Paneer', '🥣 Curd', '📦 Other']
+
+const MENU_ITEMS = [
+  { key: 'cutting', emoji: '☕',  name: 'Cutting Chai',  price: parseEther('0.25') },
+  { key: 'kulhad',  emoji: '🏺',  name: 'Kulhad Chai',   price: parseEther('0.50') },
+  { key: 'masala',  emoji: '🌿',  name: 'Masala Chai',   price: parseEther('0.75') },
+  { key: 'samosa',  emoji: '🥟',  name: 'Crispy Samosa', price: parseEther('0.50') },
+  { key: 'kachori', emoji: '🫓',  name: 'Kachori',       price: parseEther('0.60') },
+  { key: 'lassi',   emoji: '🥛',  name: 'Sweet Lassi',   price: parseEther('0.80') },
+  { key: 'paratha', emoji: '🫶',  name: 'Aloo Paratha',  price: parseEther('1.25') },
+] as const
+
+// ─── Connect Button ───────────────────────────────────────────────────────────
+// Uses ConnectKit's useModal to open the standard wallet picker modal.
+// When connected: opens the account modal for disconnect / chain switch.
+function ConnectButton() {
+  const { isConnected, address } = useAccount()
+  const { setOpen }              = useModal()
+
+  if (isConnected && address) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        style={{
+          background: 'rgba(200,109,59,0.18)',
+          border: '1px solid rgba(200,109,59,0.45)',
+          borderRadius: 20,
+          color: '#F1C40F',
+          fontSize: 12,
+          fontWeight: 700,
+          padding: '6px 14px',
+          cursor: 'pointer',
+          fontFamily: 'Space Grotesk, sans-serif',
+          letterSpacing: '0.04em',
+        }}
+      >
+        {address.slice(0, 6)}…{address.slice(-4)} ▾
+      </button>
+    )
+  }
+
+  return (
+    <button
+      onClick={() => setOpen(true)}
+      style={{
+        background: 'linear-gradient(135deg, #2775CA 0%, #1a5faa 100%)',
+        border: 'none',
+        borderRadius: 20,
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: 700,
+        padding: '7px 16px',
+        cursor: 'pointer',
+        fontFamily: 'Space Grotesk, sans-serif',
+        letterSpacing: '0.04em',
+        boxShadow: '0 2px 12px rgba(39,117,202,0.4)',
+      }}
+    >
+      💙 Connect Wallet
+    </button>
+  )
+}
+
+// ─── Tab 1: Tapri Counter ──────────────────────────────────────────────────────
+function TapriTab({ address, chainId, lang }: { address?: Hex; chainId?: number; lang: Lang }) {
+  const s = STR[lang]
+  const [cart,           setCart]           = useState<Record<string, number>>({})
+  const [buyerName,      setBuyerName]      = useState('')
+  const [orderMode,      setOrderMode]      = useState<'dine' | 'takeaway'>('dine')
+  const [tipAmt,         setTipAmt]         = useState<string | null>(null)
+  const [step,           setStep]           = useState<'idle' | 'sending' | 'done'>('idle')
+  const [lastTx,         setLastTx]         = useState<string | null>(null)
+  const [lastOrderId,    setLastOrderId]    = useState<bigint | null>(null)
+  const [totalCollected, setTotalCollected] = useState<bigint | null>(null)
+  const [orderCount,     setOrderCount]     = useState<bigint | null>(null)
+  const { data: walletClient } = useWalletClient()
+
+  const cartTotal = Object.entries(cart).reduce((acc, [key, qty]) => {
+    const item = MENU_ITEMS.find(m => m.key === key)
+    return acc + (item ? item.price * BigInt(qty) : 0n)
+  }, 0n)
+
+  const tipTotal = tipAmt ? parseEther(tipAmt) : 0n
+  const grandTotal = cartTotal + tipTotal
+
+  const itemsStr = [
+    ...Object.entries(cart)
+      .filter(([, q]) => q > 0)
+      .map(([k, q]) => `${MENU_ITEMS.find(m => m.key === k)?.name ?? k} x${q}`),
+    tipAmt ? `Tip ₹${tipAmt} USDC` : '',
+    `[${orderMode === 'dine' ? 'Dine-In' : 'Takeaway'}]`,
+  ].filter(Boolean).join(', ')
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [tc, oc] = await Promise.all([
+          arcClient.readContract({ ...TAPRI, functionName: 'totalCollected' }),
+          arcClient.readContract({ ...TAPRI, functionName: 'orderCount' }),
+        ])
+        setTotalCollected(tc)
+        setOrderCount(oc)
+      } catch { /* silent */ }
+    }
+    void fetchStats()
+    const id = setInterval(() => void fetchStats(), 5000)
+    return () => clearInterval(id)
+  }, [])
+
+  const placeOrder = useCallback(async () => {
+    if (!walletClient || !address || chainId !== ARC_CHAIN_ID) {
+      toast.error('Connect wallet on Arc Testnet first'); return
+    }
+    if (grandTotal === 0n) { toast.error('Add items or a tip first'); return }
+    setStep('sending')
+    try {
+      const hash = await walletClient.writeContract({
+        ...TAPRI,
+        functionName: 'placeOrder',
+        args: [buyerName || shortAddr(address), itemsStr],
+        value: grandTotal,
+        account: address,
+        chain: null,
+      })
+      setLastTx(hash)
+      toast.success('Order placed! Confirming…')
+      const receipt = await arcClient.waitForTransactionReceipt({ hash })
+      const log = receipt.logs[0]
+      if (log?.topics[2]) setLastOrderId(BigInt(log.topics[2]))
+      setStep('done')
+      setCart({})
+      setBuyerName('')
+      toast.success('Order confirmed onchain!')
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message.slice(0, 80) : 'Transaction failed')
+      setStep('idle')
+    }
+  }, [walletClient, address, chainId, grandTotal, buyerName, itemsStr])
+
+  return (
+    <div className="cc-col">
+      {/* ── Stats ── */}
+      <div className="cc-grid-2">
+        <div className="stat-card-amber">
+          <div className="stat-label">{s.totalCollected}</div>
+          <div className="stat-value">
+            {totalCollected !== null ? fmt(totalCollected) : '0.0000'}
+            <span> USDC</span>
+          </div>
+        </div>
+        <div className="stat-card-amber">
+          <div className="stat-label">{s.orders}</div>
+          <div className="stat-value">
+            {orderCount !== null ? orderCount.toString() : '0'}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Order Mode Selector ── */}
+      <div className="order-mode-bar">
+        <button
+          className={`mode-btn${orderMode === 'dine' ? ' active' : ''}`}
+          onClick={() => setOrderMode('dine')}
+        >{s.dineIn}</button>
+        <button
+          className={`mode-btn${orderMode === 'takeaway' ? ' active' : ''}`}
+          onClick={() => setOrderMode('takeaway')}
+        >{s.takeaway}</button>
+      </div>
+
+      {/* ── Menu Board ── */}
+      <div className="tapri-menu-board">
+        <div className="menu-board-title">🏺 माधु की दुकान — Price in USDC</div>
+        <div className="cc-menu-grid">
+          {MENU_ITEMS.map(item => (
+            <div key={item.key} className="menu-item-row">
+              <div className="menu-item-left">
+                <span className="item-emoji">{item.emoji}</span>
+                <div>
+                  <div className="item-name">{item.name}</div>
+                  <div className="item-price">💙 {fmt(item.price)} USDC</div>
+                </div>
+              </div>
+              <div className="qty-controls">
+                <button
+                  className="qty-btn"
+                  onClick={() => setCart(c => ({ ...c, [item.key]: Math.max(0, (c[item.key] ?? 0) - 1) }))}
+                >−</button>
+                <span className="qty-count">{cart[item.key] ?? 0}</span>
+                <button
+                  className="qty-btn qty-add"
+                  onClick={() => setCart(c => ({ ...c, [item.key]: (c[item.key] ?? 0) + 1 }))}
+                >+</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Cart Ticket ── */}
+      {cartTotal > 0n && (
+        <div className="cart-ticket">
+          <div className="ticket-header">🎫 Order Ticket / USDC Pay</div>
+          {Object.entries(cart).filter(([, q]) => q > 0).map(([k, q]) => {
+            const item = MENU_ITEMS.find(m => m.key === k)!
+            return (
+              <div key={k} className="ticket-line">
+                <span>{item.emoji} {item.name} × {q}</span>
+                <span className="ticket-price">{fmt(item.price * BigInt(q))} USDC</span>
+              </div>
+            )
+          })}
+          {/* ── Tip Jar Presets ── */}
+          <div className="tip-label">{s.tipTitle}</div>
+          <div className="tip-pills">
+            {['0.25','0.50','1.00','5.00'].map(v => (
+              <button
+                key={v}
+                onClick={() => setTipAmt(prev => prev === v ? null : v)}
+                className={`tip-pill${tipAmt === v ? ' active' : ''}`}
+              >+{v}</button>
+            ))}
+          </div>
+          <hr className="ticket-divider" />
+          <div className="ticket-total-row">
+            <span>TOTAL</span>
+            <span className="ticket-total">{fmt(grandTotal)} USDC</span>
+          </div>
+          <input
+            value={buyerName}
+            onChange={e => setBuyerName(e.target.value)}
+            maxLength={30}
+            placeholder="Your name (optional)"
+            className="buyer-input"
+          />
+          <button
+            onClick={() => void placeOrder()}
+            disabled={step === 'sending'}
+            className="cta-btn"
+          >
+            {step === 'sending' ? '⏳ Placing Order…' : s.placeOrder}
+          </button>
+        </div>
+      )}
+
+      {/* ── Success Receipt ── */}
+      {step === 'done' && lastTx && (
+        <div className="order-receipt">
+          <div className="receipt-title">✅ Order Confirmed!</div>
+          {lastOrderId !== null && <div className="receipt-id">Order #{lastOrderId.toString()}</div>}
+          <a
+            href={explorerTx(lastTx)}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#86efac', fontSize: 11, textDecoration: 'underline', display: 'block', marginBottom: 10 }}
+          >View on Explorer ↗</a>
+          <button
+            onClick={() => setStep('idle')}
+            style={{ fontSize: 12, color: '#86efac', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}
+          >+ New Order</button>
+        </div>
+      )}
+
+      {/* ── Bahi-Khata ── */}
+      <BahiKhata lang={lang} />
+
+      {/* ── Coupon ── */}
+      <CouponCard lang={lang} />
+
+      {/* ── Gift Chai ── */}
+      <GiftChai address={address} chainId={chainId} lang={lang} />
+    </div>
+  )
+}
+
+// ─── Tab 2: A2 Dairy Ledger ────────────────────────────────────────────────────
+function DairyTab({ address, chainId }: { address?: Hex; chainId?: number }) {
+  const [entries, setEntries] = useState<Array<{
+    productType: number; quantityMl: bigint; priceWei: bigint; timestamp: bigint; note: string
+  }>>([])
+  const [form,    setForm]    = useState({ productType: 0, quantityMl: '', priceWei: '', note: '' })
+  const [sending, setSending] = useState(false)
+  const { data: walletClient } = useWalletClient()
+  const isOwner = address?.toLowerCase() === OWNER.toLowerCase()
+
+  const fetchEntries = useCallback(async () => {
+    try {
+      const count = await arcClient.readContract({ ...DAIRY, functionName: 'getEntryCount' })
+      const items = await Promise.all(
+        Array.from({ length: Number(count) }, (_, i) =>
+          arcClient.readContract({ ...DAIRY, functionName: 'getEntry', args: [BigInt(i)] })
+        )
+      )
+      setEntries(items)
+    } catch { /* silent */ }
+  }, [])
+
+  useEffect(() => {
+    const run = () => { void fetchEntries() }
+    run()
+    const id = setInterval(run, 8000)
+    return () => clearInterval(id)
+  }, [fetchEntries])
+
+  const addEntry = useCallback(async () => {
+    if (!walletClient || !address || chainId !== ARC_CHAIN_ID) { toast.error('Connect wallet on Arc Testnet'); return }
+    if (!isOwner) { toast.error('Only the owner can add entries'); return }
+    if (!form.quantityMl || !form.priceWei) { toast.error('Fill in quantity and price'); return }
+    setSending(true)
+    try {
+      const hash = await walletClient.writeContract({
+        ...DAIRY,
+        functionName: 'addEntry',
+        args: [form.productType, BigInt(form.quantityMl), parseEther(form.priceWei), form.note],
+        account: address,
+        chain: null,
+      })
+      await arcClient.waitForTransactionReceipt({ hash })
+      toast.success('Entry added to ledger!')
+      setForm({ productType: 0, quantityMl: '', priceWei: '', note: '' })
+      void fetchEntries()
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message.slice(0, 80) : 'Transaction failed')
+    } finally { setSending(false) }
+  }, [walletClient, address, chainId, isOwner, form, fetchEntries])
+
+  return (
+    <div className="cc-col">
+      {/* Header */}
+      <div className="dairy-header">
+        <div style={{ color: '#6ee7b7', fontSize: 14, fontWeight: 800, fontFamily: 'Space Grotesk, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+          🐄 A2 Dairy Ledger
+        </div>
+        <div style={{ color: 'rgba(110,231,183,0.65)', fontSize: 12 }}>
+          On-chain milk &amp; ghee records. Owner-only writes. Public reads.
+        </div>
+      </div>
+
+      {/* Owner form */}
+      {isOwner && (
+        <div className="dairy-form">
+          <div style={{ color: '#4ade80', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'Space Grotesk, sans-serif' }}>
+            Add New Entry
+          </div>
+          <select
+            value={form.productType}
+            onChange={e => setForm(f => ({ ...f, productType: Number(e.target.value) }))}
+            className="dairy-input"
+          >
+            {PRODUCT_LABELS.map((l, i) => <option key={i} value={i}>{l}</option>)}
+          </select>
+          <div className="dairy-grid-2">
+            <input
+              value={form.quantityMl}
+              onChange={e => setForm(f => ({ ...f, quantityMl: e.target.value }))}
+              placeholder="Qty (ml)"
+              type="number"
+              className="dairy-input"
+            />
+            <input
+              value={form.priceWei}
+              onChange={e => setForm(f => ({ ...f, priceWei: e.target.value }))}
+              placeholder="Price (USDC)"
+              type="number"
+              step="0.01"
+              className="dairy-input"
+            />
+          </div>
+          <input
+            value={form.note}
+            onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
+            placeholder="Note (e.g. 'Morning batch, Gir cow')"
+            className="dairy-input"
+          />
+          <button onClick={() => void addEntry()} disabled={sending} className="dairy-btn">
+            {sending ? '⏳ Adding…' : '➕ Add Entry'}
+          </button>
+        </div>
+      )}
+
+      {/* Entries list */}
+      {entries.length === 0 ? (
+        <div style={{ textAlign: 'center', color: 'rgba(74,222,128,0.4)', fontSize: 13, padding: '24px 0' }}>
+          No entries yet.
+        </div>
+      ) : (
+        <div className="cc-col">
+          {[...entries].reverse().map((e, i) => (
+            <div key={i} className="dairy-entry">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ color: '#86efac', fontWeight: 700, fontSize: 14 }}>{PRODUCT_LABELS[e.productType]}</div>
+                  <div style={{ color: 'rgba(134,239,172,0.6)', fontSize: 11, marginTop: 2 }}>{e.note || 'No note'}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ color: '#4ade80', fontWeight: 700, fontSize: 14 }}>{e.quantityMl.toString()} ml</div>
+                  <div style={{ color: '#fbbf24', fontSize: 11 }}>{fmt(e.priceWei)} USDC</div>
+                </div>
+              </div>
+              <div style={{ color: 'rgba(74,222,128,0.4)', fontSize: 10, marginTop: 6 }}>
+                {new Date(Number(e.timestamp) * 1000).toLocaleString()}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Tab 3: Desi Smart Vault ───────────────────────────────────────────────────
+function VaultTab({ address, chainId }: { address?: Hex; chainId?: number }) {
+  const [myDeposit,   setMyDeposit]   = useState<bigint>(0n)
+  const [myClaim,     setMyClaim]     = useState<bigint>(0n)
+  const [depositAmt,  setDepositAmt]  = useState('')
+  const [withdrawAmt, setWithdrawAmt] = useState('')
+  const [reqId,       setReqId]       = useState('')
+  const [sending,     setSending]     = useState<string | null>(null)
+  const { data: walletClient } = useWalletClient()
+  const VAULT_FEE = parseEther('0.1')
+
+  const fetchBalances = useCallback(async () => {
+    if (!address) return
+    try {
+      const [dep, claim] = await Promise.all([
+        arcClient.readContract({ ...VAULT, functionName: 'deposits',  args: [address] }),
+        arcClient.readContract({ ...VAULT, functionName: 'claimable', args: [address] }),
+      ])
+      setMyDeposit(dep)
+      setMyClaim(claim)
+    } catch { /* silent */ }
+  }, [address])
+
+  useEffect(() => {
+    const run = () => { void fetchBalances() }
+    run()
+    const id = setInterval(run, 5000)
+    return () => clearInterval(id)
+  }, [fetchBalances])
+
+  const send = useCallback(async (label: string, fn: () => Promise<Hex>) => {
+    if (!address || chainId !== ARC_CHAIN_ID) { toast.error('Connect wallet on Arc Testnet'); return }
+    setSending(label)
+    try {
+      const hash = await fn()
+      await arcClient.waitForTransactionReceipt({ hash })
+      toast.success(`${label} confirmed!`)
+      void fetchBalances()
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message.slice(0, 80) : 'Transaction failed')
+    } finally { setSending(null) }
+  }, [address, chainId, fetchBalances])
+
+  const doDeposit  = () => void send('Deposit',              async () => walletClient!.writeContract({ ...VAULT, functionName: 'deposit',           value: parseEther(depositAmt),              account: address!, chain: null }))
+  const doRequest  = () => void send('Withdrawal Request',   async () => { const amt = parseEther(withdrawAmt); if (amt <= VAULT_FEE) throw new Error('Amount must be > 0.10 USDC (fee)'); return walletClient!.writeContract({ ...VAULT, functionName: 'requestWithdrawal', args: [amt],           account: address!, chain: null }) })
+  const doExecute  = () => void send('Execute',              async () => walletClient!.writeContract({ ...VAULT, functionName: 'executeWithdrawal', args: [BigInt(reqId)],                       account: address!, chain: null }))
+  const doClaim    = () => void send('Claim',                async () => walletClient!.writeContract({ ...VAULT, functionName: 'claim',             account: address!, chain: null }))
+
+  return (
+    <div className="cc-col">
+      {/* Header */}
+      <div className="vault-card">
+        <div className="vault-title">🏦 Desi Smart Vault</div>
+        <div style={{ color: 'rgba(165,180,252,0.65)', fontSize: 12, marginTop: 4 }}>
+          Non-custodial USDC escrow · 2-of-3 multi-sig · 0.10 USDC fee · 30-day cancel window
+        </div>
+      </div>
+
+      {/* Balance display */}
+      {address && (
+        <div className="vault-balance-grid">
+          <div className="vault-balance-card indigo">
+            <div className="vault-balance-label">My Deposit</div>
+            <div className="vault-balance-value">{fmt(myDeposit)} <span style={{ fontSize: '0.65rem' }}>USDC</span></div>
+          </div>
+          <div className="vault-balance-card violet">
+            <div className="vault-balance-label">Claimable</div>
+            <div className="vault-balance-value">{fmt(myClaim)} <span style={{ fontSize: '0.65rem' }}>USDC</span></div>
+          </div>
+        </div>
+      )}
+
+      {/* Deposit */}
+      <div className="vault-section indigo-border">
+        <div className="vault-section-title">Deposit USDC</div>
+        <div className="cc-row">
+          <input value={depositAmt} onChange={e => setDepositAmt(e.target.value)} placeholder="Amount (USDC)" type="number" step="0.1" className="vault-input" />
+          <button onClick={doDeposit} disabled={!!sending || !depositAmt} className="vault-icon-btn">
+            {sending === 'Deposit' ? '⏳' : '⬆️'}
+          </button>
+        </div>
+      </div>
+
+      {/* Request withdrawal */}
+      <div className="vault-section violet-border">
+        <div className="vault-section-title">Request Withdrawal</div>
+        <div className="vault-hint">Deducted from your deposit. 2 signers must approve. 0.10 USDC fee.</div>
+        <div className="cc-row">
+          <input value={withdrawAmt} onChange={e => setWithdrawAmt(e.target.value)} placeholder="Amount (USDC, min 0.11)" type="number" step="0.01" className="vault-input" />
+          <button onClick={doRequest} disabled={!!sending || !withdrawAmt} className="vault-icon-btn" style={{ background: '#7c3aed' }}>
+            {sending === 'Withdrawal Request' ? '⏳' : '📤'}
+          </button>
+        </div>
+      </div>
+
+      {/* Execute / claim */}
+      <div className="vault-section purple-border">
+        <div className="vault-section-title">Execute Approved Withdrawal</div>
+        <div className="cc-row">
+          <input value={reqId} onChange={e => setReqId(e.target.value)} placeholder="Request ID" type="number" className="vault-input" />
+          <button onClick={doExecute} disabled={!!sending || !reqId} className="vault-icon-btn" style={{ background: '#9333ea' }}>
+            {sending === 'Execute' ? '⏳' : '✅'}
+          </button>
+        </div>
+        {myClaim > 0n && (
+          <button onClick={doClaim} disabled={!!sending} className="vault-claim-btn">
+            {sending === 'Claim' ? '⏳ Claiming…' : `💰 Claim ${fmt(myClaim)} USDC`}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Tab 4: Community & SOS ────────────────────────────────────────────────────
+function CommunityTab({ address, chainId, lang }: { address?: Hex; chainId?: number; lang: Lang }) {
+  const _s = STR[lang] // available for future bilingual use
+  const [karmaAmt,  setKarmaAmt]  = useState('0.25')
+  const [sosAmt,    setSosAmt]    = useState('1.00')
+  const [note,      setNote]      = useState('')
+  const [sending,   setSending]   = useState<string | null>(null)
+  const [karmaPool, setKarmaPool] = useState<bigint | null>(null)
+  const { data: walletClient } = useWalletClient()
+
+  const fetchKarmaPool = useCallback(async () => {
+    try {
+      const bal = await arcClient.getBalance({ address: TAPRI.address })
+      setKarmaPool(bal)
+    } catch { /* silent */ }
+  }, [])
+
+  useEffect(() => {
+    const run = () => { void fetchKarmaPool() }
+    run()
+    const id = setInterval(run, 8000)
+    return () => clearInterval(id)
+  }, [fetchKarmaPool])
+
+  const sendKarma = useCallback(async () => {
+    if (!walletClient || !address || chainId !== ARC_CHAIN_ID) { toast.error('Connect wallet on Arc Testnet'); return }
+    setSending('karma')
+    try {
+      const hash = await walletClient.writeContract({
+        ...TAPRI,
+        functionName: 'placeOrder',
+        args: ['Karma Donor', `Karma Cup × 1 — ${note || 'Pay it forward!'}`],
+        value: parseEther(karmaAmt),
+        account: address,
+        chain: null,
+      })
+      await arcClient.waitForTransactionReceipt({ hash })
+      toast.success('🍵 Karma Cup sent! Someone will enjoy chai because of you.')
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message.slice(0, 80) : 'Transaction failed')
+    } finally { setSending(null) }
+  }, [walletClient, address, chainId, karmaAmt, note])
+
+  const sendSOS = useCallback(async () => {
+    if (!walletClient || !address || chainId !== ARC_CHAIN_ID) { toast.error('Connect wallet on Arc Testnet'); return }
+    setSending('sos')
+    try {
+      const hash = await walletClient.writeContract({
+        ...TAPRI,
+        functionName: 'placeOrder',
+        args: ['SOS Donor', `Emergency Relief — ${note || 'ChaiChain SOS fund'}`],
+        value: parseEther(sosAmt),
+        account: address,
+        chain: null,
+      })
+      await arcClient.waitForTransactionReceipt({ hash })
+      toast.success('🆘 SOS contribution sent! Relief fund updated.')
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message.slice(0, 80) : 'Transaction failed')
+    } finally { setSending(null) }
+  }, [walletClient, address, chainId, sosAmt, note])
+
+  return (
+    <div className="cc-col">
+
+      {/* ── Universal Welfare Faucet — दया व कल्याण फ़ौसेट ── */}
+      <div className="faucet-card">
+        <div className="faucet-title">Universal Welfare Faucet</div>
+        <div className="faucet-title-hi">दया व कल्याण फ़ौसेट 💧</div>
+        <div className="faucet-desc">
+          Zero USDC? No problem. Every visitor deserves to participate.<br />
+          Claim free Arc Testnet USDC — enough for chai, dharma, and dignity.
+        </div>
+        <a
+          className="faucet-btn"
+          href="https://faucet.circle.com"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span>💙</span> Claim Free Testnet USDC
+        </a>
+        <div className="faucet-note">
+          Powered by Circle · Arc Testnet · Gas-free on Arc ·
+          No account required · GDPR-safe · Zero server storage
+        </div>
+      </div>
+
+      {/* Karma pool */}
+      <div className="karma-card">
+        <div style={{ fontSize: 11, color: 'rgba(253,164,175,0.65)', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'Space Grotesk, sans-serif' }}>
+          🍵 Karma Cup Pool
+        </div>
+        <div className="karma-pool">
+          {karmaPool !== null ? fmt(karmaPool) : '0.0000'}
+          <span style={{ fontSize: '1rem', fontWeight: 600, marginLeft: 6 }}>USDC</span>
+        </div>
+        <div className="karma-label">Live balance of the Tapri contract</div>
+      </div>
+
+      {/* Pay it Forward */}
+      <div className="karma-section rose-border">
+        <div className="karma-section-title">☕ Pay-It-Forward (Karma Cup)</div>
+        <div className="karma-hint">Sponsor a free chai for someone in need. Goes directly onchain.</div>
+        <div className="karma-pills">
+          {['0.25', '0.50', '1.00'].map(v => (
+            <button key={v} onClick={() => setKarmaAmt(v)} className={`karma-pill${karmaAmt === v ? ' active' : ''}`}>
+              {v} USDC
+            </button>
+          ))}
+        </div>
+        <input
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          placeholder="Message (optional)"
+          className="karma-input"
+        />
+        <button onClick={() => void sendKarma()} disabled={!!sending} className="karma-btn">
+          {sending === 'karma' ? '⏳ Sending…' : '🍵 Send Karma Cup'}
+        </button>
+      </div>
+
+      {/* SOS Fund */}
+      <div className="karma-section red-border">
+        <div className="karma-section-title">🆘 Emergency SOS Relief Fund</div>
+        <div className="karma-hint">Contribute to emergency relief. Fully onchain and transparent.</div>
+        <div className="sos-pills">
+          {['1.00', '2.00', '5.00'].map(v => (
+            <button key={v} onClick={() => setSosAmt(v)} className={`sos-pill${sosAmt === v ? ' active' : ''}`}>
+              {v} USDC
+            </button>
+          ))}
+        </div>
+        <button onClick={() => void sendSOS()} disabled={!!sending} className="sos-btn">
+          {sending === 'sos' ? '⏳ Sending…' : '🆘 Contribute to SOS Fund'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Bahi-Khata: On-Chain Ledger Feed ────────────────────────────────────────
+function BahiKhata({ lang }: { lang: Lang }) {
+  const s = STR[lang]
+  const [entries, setEntries] = useState<Array<{ buyer: string; amount: bigint; orderId: bigint }>>([])
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const blockNumber = await arcClient.getBlockNumber()
+        const fromBlock   = blockNumber > 500n ? blockNumber - 500n : 0n
+        const logs = await arcClient.getLogs({
+          address: TAPRI.address,
+          fromBlock,
+          toBlock: 'latest',
+        })
+        const parsed = logs.slice(-8).reverse().map(l => ({
+          buyer:   (l.topics[1] ? `0x${l.topics[1].slice(26)}` : ''),
+          amount:  0n,
+          orderId: l.topics[2] ? BigInt(l.topics[2]) : 0n,
+        }))
+        setEntries(parsed)
+      } catch { /* silent */ }
+    }
+    void fetch()
+    const id = setInterval(() => void fetch(), 12000)
+    return () => clearInterval(id)
+  }, [])
+
+  return (
+    <div className="bahi-khata">
+      <div className="bahi-title">{s.bahiTitle}</div>
+      <div className="bahi-sub">{s.bahiSub}</div>
+      {entries.length === 0
+        ? <div className="bahi-empty">{s.noEntries}</div>
+        : entries.map((e, i) => (
+          <div key={i} className="bahi-row">
+            <div className="bahi-left">
+              <span className="bahi-id">#{e.orderId.toString()}</span>
+              <span className="bahi-addr">{shortAddr(e.buyer)}</span>
+            </div>
+            <div className="bahi-right">
+              <span className="bahi-amt">{fmt(e.amount)} USDC</span>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  )
+}
+
+// ─── Coupon Card ──────────────────────────────────────────────────────────────
+function CouponCard({ lang }: { lang: Lang }) {
+  const s = STR[lang]
+  const [code, setCode] = useState('')
+  const [msg,  setMsg]  = useState('')
+
+  const CODES: Record<string, string> = {
+    'CHAI10': '🎉 10% off your next order — code applied!',
+    'KULHAD': '🏺 Free kulhad upgrade — code applied!',
+    'MADHU':  '🍵 Owner special — 5% off applied!',
+  }
+
+  const apply = () => {
+    const found = CODES[code.trim().toUpperCase()]
+    setMsg(found ?? '❌ Invalid coupon code. Try CHAI10, KULHAD, or MADHU.')
+  }
+
+  return (
+    <div className="coupon-card">
+      <div className="coupon-title">{s.couponTitle}</div>
+      <div className="cc-row">
+        <input
+          value={code}
+          onChange={e => setCode(e.target.value)}
+          placeholder="Enter code (e.g. CHAI10)"
+          className="coupon-input"
+        />
+        <button onClick={apply} className="coupon-btn">Apply</button>
+      </div>
+      {msg && <div className="coupon-msg">{msg}</div>}
+    </div>
+  )
+}
+
+// ─── Gift Chai ────────────────────────────────────────────────────────────────
+function GiftChai({ address, chainId, lang }: { address?: Hex; chainId?: number; lang: Lang }) {
+  const s = STR[lang]
+  const [giftTo,   setGiftTo]   = useState('')
+  const [giftAmt,  setGiftAmt]  = useState('0.50')
+  const [sending,  setSending]  = useState(false)
+  const { data: walletClient }  = useWalletClient()
+
+  const sendGift = useCallback(async () => {
+    if (!walletClient || !address || chainId !== ARC_CHAIN_ID) { toast.error('Connect wallet on Arc Testnet'); return }
+    if (!giftTo.startsWith('0x') || giftTo.length !== 42) { toast.error('Enter a valid wallet address'); return }
+    setSending(true)
+    try {
+      const hash = await walletClient.writeContract({
+        ...TAPRI,
+        functionName: 'placeOrder',
+        args: [`Gift→${giftTo.slice(0,6)}`, `Gift Chai ${giftAmt} USDC for ${giftTo}`],
+        value: parseEther(giftAmt),
+        account: address,
+        chain: null,
+      })
+      await arcClient.waitForTransactionReceipt({ hash })
+      toast.success('🎁 Gift chai sent onchain!')
+      setGiftTo('')
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message.slice(0, 80) : 'Transaction failed')
+    } finally { setSending(false) }
+  }, [walletClient, address, chainId, giftTo, giftAmt])
+
+  return (
+    <div className="gift-chai-card">
+      <div className="gift-title">{s.giftTitle}</div>
+      <div className="gift-title-hi">{s.giftTitleHi}</div>
+      <div className="gift-presets">
+        {['0.25','0.50','1.00','2.00'].map(v => (
+          <button key={v} onClick={() => setGiftAmt(v)} className={`gift-preset${giftAmt === v ? ' active' : ''}`}>
+            {v} USDC
+          </button>
+        ))}
+      </div>
+      <input
+        value={giftTo}
+        onChange={e => setGiftTo(e.target.value)}
+        placeholder={s.giftTo}
+        className="gift-input"
+      />
+      <button onClick={() => void sendGift()} disabled={sending} className="gift-btn">
+        {sending ? '⏳ Sending…' : s.giftSend}
+      </button>
+    </div>
+  )
+}
+
+// ─── Shelf items ──────────────────────────────────────────────────────────────
+// Authentic roadside tapri shelf — clay kulhads, snack pouches, spices, glass jar
+const SHELF_ITEMS = [
+  { emoji: '🏺', label: 'कुल्हड़'  },
+  { emoji: '🫙', label: 'इलायची' },
+  { emoji: '🍪', label: 'Parle-G' },
+  { emoji: '🫖', label: 'Kettle'  },
+  { emoji: '🌿', label: 'Ginger'  },
+  { emoji: '🥛', label: 'A2 Milk' },
+] as const
+
+// ─── Tab config ───────────────────────────────────────────────────────────────
+const POT_TABS = [
+  { id: 'tapri', emoji: '🌸', label: 'Tapri'  },
+  { id: 'dairy', emoji: '🌼', label: 'Dairy'  },
+  { id: 'vault', emoji: '🌻', label: 'Gullak' },
+  { id: 'sos',   emoji: '🌺', label: 'Karma'  },
+] as const
+type TabId = typeof POT_TABS[number]['id']
+
+// ─── Exit Souvenir Popup ──────────────────────────────────────────────────────
+function SouvenirPopup({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="souvenir-overlay" onClick={onClose}>
+      <div className="souvenir-card" onClick={e => e.stopPropagation()}>
+        <div style={{ fontSize: 58, marginBottom: 4 }}>🏺</div>
+        <div className="souvenir-nft-badge">✨ Digital Clay Kulhad · On-Chain Souvenir</div>
+        <h2>शुक्रिया!</h2>
+        <p>
+          Thank you for visiting <strong>माधु चाय वाला</strong>.<br />
+          Your chai supports our desi community.<br />
+          <span style={{ fontSize: 11, opacity: 0.60 }}>माटी की खुशबू, अपनों का प्यार 🌸</span>
+        </p>
+        <div style={{ fontSize: 10, color: 'rgba(200,109,59,0.45)', marginBottom: 18 }}>
+          Built on Arc Testnet · Powered by USDC
+        </div>
+        <button className="souvenir-close" onClick={onClose}>
+          🏺 Wapas Aao!
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Root Component ───────────────────────────────────────────────────────────
+export default function ChaiChainApp() {
+  const [activeTab,     setActiveTab]     = useState<TabId>('tapri')
+  const [showSouvenir,  setShowSouvenir]  = useState(false)
+  const [lang,          setLang]          = useState<Lang>('hi')
+  const s = STR[lang]
+  const { address, chainId, isConnected } = useAccount()
+  const isWrongChain = isConnected && chainId !== ARC_CHAIN_ID
+  const walletRef = useRef<Hex | undefined>(address)
+
+  useEffect(() => { walletRef.current = address }, [address])
+
+  useEffect(() => {
+    if (!isConnected && walletRef.current) setShowSouvenir(true)
+  }, [isConnected])
+
+  return (
+    <div className="chaichain-root" style={{ backgroundColor: '#0D111C' }}>
+
+      {/* Exit souvenir popup */}
+      {showSouvenir && <SouvenirPopup onClose={() => setShowSouvenir(false)} />}
+
+      {/* ── Sticky Header ── */}
+      <header className="cc-header">
+        <div className="cc-header-inner">
+          <div className="cc-header-brand">
+            <div className="cc-brand-icon">🏺</div>
+            <div>
+              <div className="cc-brand-name cc-title-hi">माधु चाय वाला</div>
+              <div className="cc-brand-name-hi">Madhu Chai Wala</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={() => setLang(l => l === 'hi' ? 'en' : 'hi')}
+              className="lang-toggle"
+              title="Toggle language / भाषा बदलें"
+            >
+              {lang === 'hi' ? 'EN' : 'हि'}
+            </button>
+            <a
+              href="https://x.com/Bhupendrxsingh"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#C86D3B', fontSize: 14, textDecoration: 'none' }}
+              title="Creator @Bhupendrxsingh"
+            >𝕏</a>
+            <ConnectButton />
+          </div>
+        </div>
+      </header>
+
+      {/* ── Tarpaulin Signboard Banner ── */}
+      <div className="chaichain-banner">
+
+        {/* Marigold garland marquee */}
+        <div className="garland-strip">
+          <span>{'🌸🌼🏺🍪🌸🌼🫙🍃🌿🌺🏺🫖🌻🌸🌼🏺☕🌸🌼🫙🍃🌿🌺🏺🫖🌻'.repeat(4)}</span>
+        </div>
+
+        {/* Status badges */}
+        <div className="status-badges">
+          <span className="status-badge green">Arc Testnet 🟢</span>
+          <span className="status-badge gold">USDC Powered ⚡</span>
+          <span className="status-badge blue">Circle Web3 💙</span>
+        </div>
+
+        {/* Steam + Title */}
+        <div className="banner-title-wrap">
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginBottom: 4 }}>
+            <span className="steam-particle">〰️</span>
+            <span className="steam-particle">♨️</span>
+            <span className="steam-particle">〰️</span>
+          </div>
+          <h1 className="banner-main-title cc-title-hi">🏺 {s.title}</h1>
+          <div className="banner-sub-hindi">{s.sub}</div>
+          <div className="banner-tagline">{s.tagline}</div>
+          <div className="banner-slogan">Authentic Roadside Tapri · Web3 Powered · Near Station Chowk</div>
+        </div>
+
+        {/* String lights */}
+        <div className="string-lights">
+          {Array.from({ length: 10 }).map((_, i) => <div key={i} className="light-bulb" />)}
+        </div>
+
+        {/* Kulhad & snack shelf */}
+        <div className="shelf-row">
+          {SHELF_ITEMS.map(item => (
+            <div key={item.label} className="shelf-item">
+              <span className="jar">{item.emoji}</span>
+              <span className="jar-label">{item.label}</span>
+            </div>
+          ))}
+        </div>
+        <div className="shelf-plank" />
+
+        {/* Animated Arc+USDC glow strip */}
+        <div className="banner-glow-strip" />
+      </div>
+
+      {/* Wrong chain warning */}
+      {isWrongChain && (
+        <div className="cc-wrong-chain">
+          ⚠️ Wrong network — switch to Arc Testnet (Chain ID 5042002) to interact.
+        </div>
+      )}
+
+      {/* ── Fulwari Pot Tab Navigation ── */}
+      <nav className="fulwari-nav">
+        {POT_TABS.map(tab => (
+          <button
+            key={tab.id}
+            className={`pot-tab${activeTab === tab.id ? ' active' : ''}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            <span className="pot-emoji">{tab.emoji}</span>
+            <span className="pot-label">{tab.label}</span>
+            <span className="pot-underbar" />
+          </button>
+        ))}
+      </nav>
+
+      {/* ── Tab Content ── */}
+      <div className="cc-tab-content">
+        {activeTab === 'tapri' && <TapriTab address={address} chainId={chainId} lang={lang} />}
+        {activeTab === 'dairy' && <DairyTab address={address} chainId={chainId} />}
+        {activeTab === 'vault' && <VaultTab address={address} chainId={chainId} />}
+        {activeTab === 'sos'   && <CommunityTab address={address} chainId={chainId} lang={lang} />}
+      </div>
+
+      {/* ── Footer ── */}
+      <footer className="cc-footer">
+        माधु चाय वाला · Arc Testnet · USDC Powered ·{' '}
+        <a href="https://x.com/Bhupendrxsingh" target="_blank" rel="noopener noreferrer">@Bhupendrxsingh</a>
+      </footer>
+    </div>
+  )
+}
