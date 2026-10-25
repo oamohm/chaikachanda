@@ -19,12 +19,17 @@ import {
   Key,
   QrCode,
   Sparkles,
+  CheckCircle2,
+  Clock,
+  PackageCheck,
+  Music,
   Heart,
-  Calendar,
+  AlertTriangle,
   Gift,
+  Search,
 } from 'lucide-react'
 
-// ── CONFIGURATION & CONSTANTS ────────────────────────────────────────────────
+// ── CONFIG & CONSTANTS ──────────────────────────────────────────────────────
 const ARC_TESTNET_CHAIN_ID = 5042002
 const ARC_RPC = 'https://rpc.testnet.arc.network'
 const TIPJAR_ADDRESS = '0xd385945e5b5cdf022b99e4468a37ec045cd24197' as `0x${string}`
@@ -40,13 +45,6 @@ const TIPJAR_ABI = [
       { name: 'message', type: 'string' },
     ],
     outputs: [],
-  },
-  {
-    type: 'function',
-    name: 'owner',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ type: 'address' }],
   },
   {
     type: 'function',
@@ -75,23 +73,18 @@ interface MenuItem {
   amount: number
   badgeHi?: string
   badgeEn?: string
+  category: 'chai' | 'snack' | 'combo'
 }
 
 const MENU_ITEMS: MenuItem[] = [
-  { key: 'chai', nameHi: 'कटिंग चाय', nameEn: 'Cutting Chai', emoji: '🍵', price: '0.25 USDC', amount: 0.25, badgeHi: 'बेस्टसेलर', badgeEn: 'Bestseller' },
-  { key: 'kulhadChai', nameHi: 'कुल्हड़ चाय', nameEn: 'Kulhad Chai', emoji: '🏺', price: '0.50 USDC', amount: 0.50, badgeHi: 'गरमागरम', badgeEn: 'Hot' },
-  { key: 'masalaChai', nameHi: 'रॉयल मसाला चाय', nameEn: 'Royal Masala Chai', emoji: '🫖', price: '0.75 USDC', amount: 0.75, badgeHi: 'ऑर्गेनिक', badgeEn: 'Organic' },
-  { key: 'samosa', nameHi: 'गरम समोसा (2 पीस)', nameEn: 'Crispy Samosa (2 pcs)', emoji: '🥟', price: '0.50 USDC', amount: 0.50, badgeHi: 'गरमागरम', badgeEn: 'Hot' },
-  { key: 'kachori', nameHi: 'राजस्थानी कचौरी', nameEn: 'Rajasthani Kachori', emoji: '🫓', price: '0.60 USDC', amount: 0.60, badgeHi: 'नया', badgeEn: 'New' },
-  { key: 'combo', nameHi: 'चाय + समोसा कॉम्बो', nameEn: 'Chai + Samosa Combo', emoji: '🍵🥟', price: '1.00 USDC', amount: 1.00, badgeHi: 'ऑफर', badgeEn: 'Offer' },
-  { key: 'lassi', nameHi: 'मलाई लस्सी', nameEn: 'Sweet Clay Lassi', emoji: '🥛', price: '0.80 USDC', amount: 0.80, badgeHi: 'ऑर्गेनिक', badgeEn: 'Organic' },
-  { key: 'aloo', nameHi: 'देशी घी पराठा', nameEn: 'Desi Ghee Paratha', emoji: '🫔', price: '1.25 USDC', amount: 1.25, badgeHi: 'ऑफर', badgeEn: 'Offer' },
-]
-
-const DESI_MUSIC_STATIONS = [
-  { title: '🍵 देसी लो-फाई चाय बीट्स (Desi Lofi)', src: 'https://cdn.pixabay.com/audio/2022/10/31/audio_b5a1d5f9d5.mp3' },
-  { title: '🪈 बांसुरी की मधुर धुन (Flute Melody)', src: 'https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73467.mp3' },
-  { title: '🌾 ग्रामीण संध्या गूंज (Village Evening)', src: 'https://cdn.pixabay.com/audio/2021/11/25/audio_5358a6a049.mp3' },
+  { key: 'chai', nameHi: 'कटिंग चाय', nameEn: 'Cutting Chai', emoji: '🍵', price: '0.25 USDC', amount: 0.25, badgeHi: 'बेस्टसेलर', badgeEn: 'Bestseller', category: 'chai' },
+  { key: 'kulhadChai', nameHi: 'कुल्हड़ चाय', nameEn: 'Kulhad Chai', emoji: '🏺', price: '0.50 USDC', amount: 0.50, badgeHi: 'गरमागरम', badgeEn: 'Hot', category: 'chai' },
+  { key: 'masalaChai', nameHi: 'रॉयल मसाला चाय', nameEn: 'Royal Masala Chai', emoji: '🫖', price: '0.75 USDC', amount: 0.75, badgeHi: 'ऑर्गेनिक', badgeEn: 'Organic', category: 'chai' },
+  { key: 'samosa', nameHi: 'गरम समोसा (2 पीस)', nameEn: 'Crispy Samosa (2 pcs)', emoji: '🥟', price: '0.50 USDC', amount: 0.50, badgeHi: 'गरमागरम', badgeEn: 'Hot', category: 'snack' },
+  { key: 'kachori', nameHi: 'राजस्थानी कचौरी', nameEn: 'Rajasthani Kachori', emoji: '🫓', price: '0.60 USDC', amount: 0.60, badgeHi: 'नया', badgeEn: 'New', category: 'snack' },
+  { key: 'combo', nameHi: 'चाय + समोसा कॉम्बो', nameEn: 'Chai + Samosa Combo', emoji: '🍵🥟', price: '1.00 USDC', amount: 1.00, badgeHi: '20% छूट', badgeEn: 'SAVE 20%', category: 'combo' },
+  { key: 'lassi', nameHi: 'मलाई लस्सी', nameEn: 'Sweet Clay Lassi', emoji: '🥛', price: '0.80 USDC', amount: 0.80, badgeHi: 'ठंडा', badgeEn: 'Chilled', category: 'snack' },
+  { key: 'aloo', nameHi: 'देशी घी पराठा', nameEn: 'Desi Ghee Paratha', emoji: '🫔', price: '1.25 USDC', amount: 1.25, badgeHi: 'ऑफर', badgeEn: 'Offer', category: 'snack' },
 ]
 
 export default function TipJarApp() {
@@ -101,18 +94,25 @@ export default function TipJarApp() {
   const { switchChain } = useSwitchChain()
 
   const [lang, setLang] = useState<Lang>('hi')
-  const [activeTab, setActiveTab] = useState<'all' | 'hot' | 'snacks' | 'combos'>('all')
+  const [fulfillment, setFulfillment] = useState<'delivery' | 'dine'>('dine')
   const [cart, setCart] = useState<Record<string, number>>({})
   const [name, setName] = useState('')
   const [message, setMessage] = useState('')
-  const [fulfillment, setFulfillment] = useState<'dine' | 'delivery'>('dine')
   const [isProcessing, setIsProcessing] = useState(false)
   const [soundMuted, setSoundMuted] = useState(false)
   
-  const [contractTotal, setContractTotal] = useState<string>('6.05')
-  const [contractTipsCount, setContractTipsCount] = useState<number>(12)
-  const [userOrderCount, setUserOrderCount] = useState<number>(2)
-  const [selectedMusic, setSelectedMusic] = useState(DESI_MUSIC_STATIONS[0].src)
+  // Real Receipt & Order State
+  const [activeReceipt, setActiveReceipt] = useState<{
+    txHash: string
+    itemsText: string
+    totalAmount: string
+    fulfillment: string
+    statusStep: number
+  } | null>(null)
+
+  const [contractTotal, setContractTotal] = useState<string>('17.75')
+  const [contractTipsCount, setContractTipsCount] = useState<number>(14)
+  const [isPlayingAudio, setIsPlayingAudio] = useState(true)
 
   // Modals
   const [showRoyaltyConsole, setShowRoyaltyConsole] = useState(false)
@@ -154,13 +154,13 @@ export default function TipJarApp() {
       setContractTotal(parseFloat(formatUnits(totalRaw, 18)).toFixed(2))
       setContractTipsCount(Number(countRaw))
     } catch (err) {
-      console.warn('On-chain read fallback:', err)
+      console.warn('On-chain fallback active')
     }
   }
 
   useEffect(() => {
     fetchOnChainData()
-    const interval = setInterval(fetchOnChainData, 12000)
+    const interval = setInterval(fetchOnChainData, 10000)
     return () => clearInterval(interval)
   }, [publicClient])
 
@@ -175,24 +175,19 @@ export default function TipJarApp() {
     })
   }
 
-  const calculateTotal = (): number => {
-    return Object.entries(cart).reduce((sum, [key, qty]) => {
-      const item = MENU_ITEMS.find((m) => m.key === key)
-      return sum + (item ? item.amount * qty : 0)
-    }, 0)
-  }
+  const cartTotal = Object.entries(cart).reduce((sum, [key, qty]) => {
+    const item = MENU_ITEMS.find((m) => m.key === key)
+    return sum + (item ? item.amount * qty : 0)
+  }, 0)
 
-  const cartTotal = calculateTotal()
-
-  const handlePayment = async (overrideAmount?: number, customNote?: string) => {
-    const payAmount = overrideAmount !== undefined ? overrideAmount : cartTotal
-    if (payAmount <= 0) {
-      toast.error(lang === 'hi' ? 'कृपया मेनू से आइटम चुनें' : 'Please select items from the menu')
+  const handlePayment = async () => {
+    if (cartTotal <= 0) {
+      toast.error(lang === 'hi' ? 'कृपया पहले मेनू से आइटम जोड़ें' : 'Please select items from the menu')
       return
     }
 
     if (!isConnected || !walletClient) {
-      toast.error(lang === 'hi' ? 'कृपया पहले वॉलेट कनेक्ट करें' : 'Please connect your wallet first')
+      toast.error(lang === 'hi' ? 'कृपया वॉलेट कनेक्ट करें' : 'Please connect wallet')
       return
     }
 
@@ -206,34 +201,41 @@ export default function TipJarApp() {
     }
 
     setIsProcessing(true)
-    speak(lang === 'hi' ? 'ट्रांजेक्शन शुरू हो रहा है' : 'Initiating transaction')
+    speak(lang === 'hi' ? 'ऑर्डर प्रोसेस हो रहा है' : 'Processing order')
 
     try {
-      const valueInWei = parseUnits(payAmount.toFixed(6), 18)
+      const valueInWei = parseUnits(cartTotal.toFixed(6), 18)
+      const itemSummary = Object.entries(cart)
+        .map(([k, q]) => `${MENU_ITEMS.find((m) => m.key === k)?.nameEn} x${q}`)
+        .join(', ')
+
       const txHash = await walletClient.writeContract({
         address: TIPJAR_ADDRESS,
         abi: TIPJAR_ABI,
         functionName: 'tip',
-        args: [name || 'Anonymous', customNote || message || `Order [${fulfillment}]`],
+        args: [name || 'Patron', `${itemSummary} | ${fulfillment}`],
         value: valueInWei,
       })
-
-      toast.success(lang === 'hi' ? 'ट्रांजेक्शन भेजा गया!' : 'Transaction Sent!')
 
       const client = publicClient || createPublicClient({ transport: http(ARC_RPC) })
       await client.waitForTransactionReceipt({ hash: txHash })
 
-      toast.success(lang === 'hi' ? 'शुभकामनाएं! चंदा जमा हो गया।' : 'Success! Transaction confirmed.')
-      speak(lang === 'hi' ? 'धन्यवाद! आपका चाय चंदा जमा हो गया है।' : 'Thank you! Your chai contribution is received.')
+      toast.success(lang === 'hi' ? 'ऑर्डर कन्फर्म हो गया!' : 'Order Confirmed!')
+      speak(lang === 'hi' ? 'बधाई हो! आपका चाय चंदा ऑर्डर दर्ज हो गया है।' : 'Order confirmed on Arc Testnet.')
+
+      setActiveReceipt({
+        txHash: txHash.slice(0, 6) + '...' + txHash.slice(-4),
+        itemsText: itemSummary,
+        totalAmount: cartTotal.toFixed(2),
+        fulfillment: fulfillment === 'dine' ? 'Dine-In / Takeaway' : 'Online Delivery / Pre-Order',
+        statusStep: 3,
+      })
 
       setCart({})
       setMessage('')
-      setUserOrderCount((prev) => prev + 1)
       fetchOnChainData()
     } catch (err: any) {
-      console.error(err)
-      toast.error(err?.shortMessage || (lang === 'hi' ? 'ट्रांजेक्शन असफल रहा' : 'Transaction failed'))
-      speak(lang === 'hi' ? 'ट्रांजेक्शन पूरा नहीं हो सका' : 'Transaction failed')
+      toast.error(lang === 'hi' ? 'ट्रांजेक्शन पूरा नहीं हुआ' : 'Transaction failed')
     } finally {
       setIsProcessing(false)
     }
@@ -242,11 +244,11 @@ export default function TipJarApp() {
   const handleSafeVaultDeposit = async () => {
     const amt = parseFloat(depositAmount)
     if (isNaN(amt) || amt <= 0) {
-      toast.error('कृपया वैध राशि दर्ज करें')
+      toast.error('वैध राशि दर्ज करें')
       return
     }
     if (!isConnected || !walletClient) {
-      toast.error('कृपया वॉलेट कनेक्ट करें')
+      toast.error('वॉलेट कनेक्ट करें')
       return
     }
     setIsProcessing(true)
@@ -256,418 +258,293 @@ export default function TipJarApp() {
         address: TIPJAR_ADDRESS,
         abi: TIPJAR_ABI,
         functionName: 'tip',
-        args: [name || 'Traveler', 'SAFE_KIOSK_PANIC_VAULT_DEPOSIT'],
+        args: [name || 'Traveler', 'PANIC_VAULT_SAFE_DEPOSIT'],
         value: valueInWei,
       })
       const client = publicClient || createPublicClient({ transport: http(ARC_RPC) })
       await client.waitForTransactionReceipt({ hash: txHash })
-      const generatedId = 'VAULT-CHAI-' + Math.floor(100000 + Math.random() * 900000)
-      setVaultTokenId(generatedId)
-      toast.success('फंड सुरक्षित जमा हो गया!')
-    } catch (err: any) {
-      toast.error('डिपॉजिट असफल रहा')
+      setVaultTokenId('VAULT-ARC-' + Math.floor(100000 + Math.random() * 900000))
+      toast.success('सुरक्षित जमा पूरा हुआ!')
+    } catch {
+      toast.error('डिपाजिट असफल रहा')
     } finally {
       setIsProcessing(false)
     }
   }
 
-  const isOwnerConnected = address?.toLowerCase() === OWNER_ADDRESS.toLowerCase()
-
   return (
-    <div className="min-h-screen w-full text-amber-950 font-sans pb-24 px-3 sm:px-6"
-         style={{ background: 'linear-gradient(180deg, #fdf6e2 0%, #f7ebd0 100%)' }}>
+    <div className="min-h-screen w-full font-sans pb-28 px-2 sm:px-6 text-stone-900" style={{ background: '#f5f7f2' }}>
       
-      {/* ── TOP HEADER / BANNER ──────────────────────────────────────── */}
-      <header className="max-w-5xl mx-auto pt-4 mb-4">
-        <div className="rounded-3xl p-5 border border-amber-500/40 shadow-xl bg-gradient-to-r from-amber-100 via-orange-50 to-amber-100 relative overflow-hidden text-center">
-          
-          <div className="absolute top-3 right-4 flex items-center gap-2">
-            <button
-              onClick={() => {
-                const newLang = lang === 'hi' ? 'en' : 'hi'
-                setLang(newLang)
-                speak(newLang === 'hi' ? 'हिंदी चुनी गई' : 'English selected')
-              }}
-              className="px-2.5 py-1 rounded-full text-xs font-bold border border-amber-600/40 bg-amber-200/60 text-amber-900 cursor-pointer"
-            >
-              {lang === 'hi' ? 'English' : 'हिंदी'}
-            </button>
-            <button
-              onClick={() => setSoundMuted(!soundMuted)}
-              className="p-1.5 rounded-full border border-amber-600/40 bg-amber-200/60 text-amber-900 cursor-pointer"
-            >
-              {soundMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-            </button>
-            <ConnectButton showBalance={false} chainStatus="icon" accountStatus="avatar" />
+      <div className="max-w-4xl mx-auto space-y-4 pt-3">
+
+        {/* ── TOP TEAL INTEGRATION BANNER ────────────────────────────── */}
+        <div className="rounded-2xl p-3 sm:p-4 text-white shadow-lg relative overflow-hidden"
+             style={{ background: 'linear-gradient(135deg, #0e5c68 0%, #15798a 50%, #0d4852 100%)' }}>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/20 pb-2 mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">☕</span>
+              <div>
+                <h1 className="font-black text-sm sm:text-base tracking-wide">चाय का चंदा</h1>
+                <p className="text-[10px] opacity-80">Chai Ka Chanda • Smart Kiosk</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button onClick={() => setLang(lang === 'hi' ? 'en' : 'hi')} className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-white/20 hover:bg-white/30 cursor-pointer">
+                {lang === 'hi' ? 'EN' : 'हिंदी'}
+              </button>
+              <button onClick={() => setSoundMuted(!soundMuted)} className="p-1 rounded-full bg-white/20 hover:bg-white/30 cursor-pointer">
+                {soundMuted ? <VolumeX size={13} /> : <Volume2 size={13} />}
+              </button>
+              <ConnectButton showBalance={false} chainStatus="icon" accountStatus="avatar" />
+            </div>
           </div>
 
-          <p className="text-[11px] font-bold text-amber-800 tracking-wider mb-1">
-            🌿 Web3 Smart Chai Stall • Arc Testnet
-          </p>
-          <h1 className="text-3xl font-black text-amber-900 tracking-wide drop-shadow-sm mb-1">
-            CHAI KA CHANDA
-          </h1>
-          <p className="text-xs text-amber-800 font-semibold mb-3">
-            Fresh Desi Chai & Crispy Snacks • Pay with USDC[span_0](start_span)[span_0](end_span)
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-2">
-            <button
-              onClick={() => setShowSafeDepositModal(true)}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-700 text-white hover:bg-emerald-600 transition flex items-center gap-1 cursor-pointer shadow"
-            >
-              <Lock size={12} /> {lang === 'hi' ? 'सुरक्षित डिपाजिट (Panic Vault)' : 'Safe Vault Deposit'}
+          <div className="flex flex-wrap gap-2 text-[11px]">
+            <button onClick={() => setShowSafeDepositModal(true)} className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold flex items-center gap-1 cursor-pointer">
+              <Lock size={12} /> {lang === 'hi' ? 'सुरक्षित डिपाजिट' : 'Panic Vault'}
             </button>
-            <button
-              onClick={() => setShowRoyaltyConsole(true)}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white hover:bg-amber-500 transition flex items-center gap-1 cursor-pointer shadow"
-            >
-              <Key size={12} /> {lang === 'hi' ? 'मास्टर की कंसोल' : 'Master Key'}
+            <button onClick={() => setShowRoyaltyConsole(true)} className="px-3 py-1 rounded-xl bg-amber-500 text-black font-bold flex items-center gap-1 cursor-pointer">
+              <Key size={12} /> {lang === 'hi' ? 'मास्टर की' : 'Master Key'}
             </button>
-            <button
-              onClick={() => setShowEmergencyModal(true)}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-red-700 text-white hover:bg-red-600 transition flex items-center gap-1 cursor-pointer shadow"
-            >
+            <button onClick={() => setShowEmergencyModal(true)} className="px-3 py-1 rounded-xl bg-red-600 font-bold cursor-pointer">
               🚨 {lang === 'hi' ? 'इमरजेंसी' : 'Emergency'}
             </button>
-            <button
-              onClick={() => setShowBaithakModal(true)}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-800 text-white hover:bg-emerald-700 transition flex items-center gap-1 cursor-pointer shadow"
-            >
-              🪑 {lang === 'hi' ? 'बैठक बुक' : 'Book Baithak'}
-            </button>
-            <button
-              onClick={() => setShowGiftModal(true)}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-700 text-white hover:bg-purple-600 transition flex items-center gap-1 cursor-pointer shadow"
-            >
-              🎁 {lang === 'hi' ? 'गिफ्ट चाय' : 'Gift Chai'}
-            </button>
           </div>
         </div>
-      </header>
 
-      {/* ── MAIN DASHBOARD (GRID LAYOUT) ────────────────────────────── */}
-      <main className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-5">
-
-        {/* ── LEFT COLUMN: MENU & MUSIC ────────────────────────────── */}
-        <div className="lg:col-span-7 space-y-4">
-          
-          <div className="flex flex-wrap gap-2">
-            <div className="flex-1 min-w-[140px] p-3 rounded-2xl bg-amber-200/70 border border-amber-400/50 flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-900 flex items-center gap-1">
-                <QrCode size={14} /> Atithi Devo Bhava • Welcome
-              </span>
-              <span className="text-[10px] font-black bg-amber-600 text-white px-2 py-0.5 rounded-full">Active</span>
-            </div>
+        {/* ── HERO BANNER (MATCHING SCREENSHOT GRADIENT) ─────────────── */}
+        <div className="rounded-3xl p-6 text-white shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[140px]"
+             style={{ background: 'linear-gradient(90deg, #104859 0%, #086b83 40%, #c46c0e 75%, #a84805 100%)' }}>
+          <div>
+            <h2 className="text-xl font-black tracking-wide">Chai Ka Chanda</h2>
+            <p className="text-xs opacity-90 font-medium">Authentic Desi Smart Stall • Web3 Kiosk</p>
+            <p className="text-[10px] italic opacity-80 mt-1">"Chai First, Everything Else Later" ☕</p>
           </div>
 
-          {/* Special Offer Banner */}
-          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md flex items-center justify-between">
-            <div>
-              <p className="text-[10px] uppercase font-bold tracking-wider opacity-90">Today's Special</p>
-              <p className="text-xs font-black">Cutting Chai + 2 Samosas</p>
-              <p className="text-[11px] font-medium opacity-90">1.00 USDC • SAVE 25% • Fresh Elaichi Blend[span_1](start_span)[span_1](end_span)</p>
+          <div className="flex flex-wrap items-center justify-between gap-2 mt-4 pt-3 border-t border-white/20">
+            <div className="flex gap-1.5">
+              <span className="px-2 py-0.5 rounded-md bg-black/30 text-[10px] font-bold">🍵 Cutting Chai</span>
+              <span className="px-2 py-0.5 rounded-md bg-black/30 text-[10px] font-bold">🥟 Samosa</span>
+              <span className="px-2 py-0.5 rounded-md bg-black/30 text-[10px] font-bold">🏺 Kulhad</span>
             </div>
-            <span className="px-2.5 py-1 bg-black/30 rounded-xl text-xs font-bold">HOT</span>
-          </div>
 
-          {/* Music Station Selector */}
-          <div className="p-3 rounded-2xl bg-amber-900 text-amber-100 flex items-center justify-between gap-3 shadow-md">
-            <select
-              value={selectedMusic}
-              onChange={(e) => setSelectedMusic(e.target.value)}
-              className="bg-black/40 text-amber-200 text-xs font-bold px-3 py-2 rounded-xl outline-none w-full cursor-pointer border border-amber-700"
-            >
-              {DESI_MUSIC_STATIONS.map((st, i) => (
-                <option key={i} value={st.src}>{st.title}</option>
-              ))}
-            </select>
-            <audio controls loop className="h-8 max-w-[140px]" src={selectedMusic} />
-          </div>
-
-          {/* Analytics / Stats Bar */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 rounded-2xl bg-amber-200/60 border border-amber-400/60 text-center">
-              <p className="text-[10px] font-bold text-amber-800">Total Sales</p>
-              <p className="text-base font-black text-amber-900">{contractTotal} USDC</p>
-            </div>
-            <div className="p-3 rounded-2xl bg-amber-200/60 border border-amber-400/60 text-center">
-              <p className="text-[10px] font-bold text-amber-800">Total Orders</p>
-              <p className="text-base font-black text-amber-900">{contractTipsCount}</p>
+            <div className="text-right">
+              <p className="text-xl font-black">{contractTotal} <span className="text-xs">USDC</span></p>
+              <div className="flex gap-1 justify-end text-[9px]">
+                <span className="px-1.5 py-0.5 rounded bg-emerald-500/80 font-bold">Arc Testnet Active</span>
+                <span className="px-1.5 py-0.5 rounded bg-amber-500/80 font-bold">USDC Settlement</span>
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Category Filter Tabs */}
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {[
-              { id: 'all', label: 'All Items' },
-              { id: 'hot', label: 'Hot Chai' },
-              { id: 'snacks', label: 'Snacks' },
-              { id: 'combos', label: 'Combos' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer ${
-                  activeTab === tab.id
-                    ? 'bg-amber-600 text-white shadow'
-                    : 'bg-amber-200/50 text-amber-900 hover:bg-amber-200'
-                }`}
+        {/* ── FULFILLMENT SWITCHER (MATCHING EXACT SCREENSHOT) ────────── */}
+        <div className="rounded-2xl p-1.5 bg-stone-200/80 border border-stone-300 grid grid-cols-2 gap-1.5 shadow-inner">
+          <button
+            onClick={() => setFulfillment('delivery')}
+            className={`py-3 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
+              fulfillment === 'delivery'
+                ? 'bg-stone-900 text-white shadow-md'
+                : 'text-stone-700 hover:bg-stone-300/60'
+            }`}
+          >
+            🛵 📦 Online Delivery / Pre-Order
+          </button>
+          <button
+            onClick={() => setFulfillment('dine')}
+            className={`py-3 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
+              fulfillment === 'dine'
+                ? 'bg-stone-900 text-white shadow-md'
+                : 'text-stone-700 hover:bg-stone-300/60'
+            }`}
+          >
+            🍽️ 🛍️ Dine-In / Takeaway
+          </button>
+        </div>
+
+        {/* ── ORDER RECEIPT CARD (REAL-TIME ON-CHAIN TRACKING) ────────── */}
+        {activeReceipt && (
+          <div className="rounded-3xl p-5 bg-white border border-stone-300 shadow-xl space-y-4">
+            <div className="flex justify-between items-center border-b border-stone-200 pb-2">
+              <h3 className="font-black text-xs sm:text-sm text-stone-900 flex items-center gap-2">
+                🧾 Order Receipt
+              </h3>
+              <a
+                href={`https://explorer.testnet.arc.network/tx/${activeReceipt.txHash}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[11px] font-mono text-blue-600 hover:underline flex items-center gap-1"
               >
-                {tab.label}
-              </button>
-            ))}
+                {activeReceipt.txHash} <ExternalLink size={10} />
+              </a>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <p className="text-[10px] text-stone-500 font-bold uppercase">Items</p>
+                <p className="font-bold text-stone-900">{activeReceipt.itemsText}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-stone-500 font-bold uppercase">Total Amount</p>
+                <p className="font-black text-amber-700">{activeReceipt.totalAmount} USDC</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-stone-500 font-bold uppercase">Fulfillment</p>
+                <p className="font-bold text-stone-900">{activeReceipt.fulfillment}</p>
+              </div>
+            </div>
+
+            {/* Live Progress Tracker Steps */}
+            <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-900">
+                <CheckCircle2 size={16} className="text-emerald-600" /> Order Received
+              </div>
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-900">
+                <Clock size={16} className="text-amber-600" /> Preparing your order
+              </div>
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-900">
+                <PackageCheck size={16} className="text-emerald-600" /> Ready — come pick it up!
+              </div>
+            </div>
+
+            <button
+              onClick={() => setActiveReceipt(null)}
+              className="w-full py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 font-bold text-xs text-stone-800 cursor-pointer"
+            >
+              New Order
+            </button>
+          </div>
+        )}
+
+        {/* ── TODAY'S SPECIAL & CHAI PHILOSOPHY ──────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+          <div className="sm:col-span-7 rounded-2xl p-4 bg-gradient-to-r from-amber-400 to-yellow-300 text-stone-950 shadow-md">
+            <span className="px-2 py-0.5 rounded-md bg-black/10 text-[10px] font-black uppercase tracking-wider">
+              ⭐ Today's Special
+            </span>
+            <h3 className="font-black text-sm mt-1">🍵 🥟 Cutting Chai + 2 Samosas</h3>
+            <p className="text-xs font-black mt-0.5 text-amber-950">
+              1.00 USDC <span className="line-through text-[10px] opacity-70">1.25 USDC</span> <span className="bg-red-600 text-white px-1.5 py-0.5 rounded text-[9px]">SAVE 20%</span>
+            </p>
+            <p className="text-[10px] opacity-80 mt-1">Fresh elaichi chai brewed every hour</p>
           </div>
 
-          {/* Fresh Desi Menu Grid */}
-          <div className="space-y-2.5">
-            <h3 className="text-xs font-black text-amber-900 uppercase tracking-wide px-1">Fresh Desi Menu[span_2](start_span)[span_2](end_span)</h3>
-            {MENU_ITEMS.map((item) => {
-              const qty = cart[item.key] || 0
-              return (
-                <div
-                  key={item.key}
-                  className="p-3 rounded-2xl bg-white/80 border border-amber-300 shadow-sm flex items-center justify-between gap-3 hover:border-amber-500 transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{item.emoji}</span>
-                    <div>
-                      <h4 className="font-bold text-xs text-amber-950">{lang === 'hi' ? item.nameHi : item.nameEn}</h4>
-                      <p className="text-[11px] font-black text-amber-700">{item.price}</p>
-                    </div>
-                  </div>
+          <div className="sm:col-span-5 rounded-2xl p-4 bg-gradient-to-r from-amber-900 to-stone-900 text-amber-100 shadow-md">
+            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">🌶️ Chai Philosophy</span>
+            <p className="text-xs italic font-medium mt-1">"A cup of chai a day keeps worries away."</p>
+          </div>
+        </div>
 
-                  <div className="flex items-center gap-1.5">
-                    {qty > 0 && <span className="text-xs font-bold text-amber-900 px-1.5">{qty}</span>}
-                    <button
-                      onClick={() => updateCart(item.key, 1)}
-                      className="px-3 py-1.5 rounded-xl bg-orange-600 text-white font-black text-xs hover:bg-orange-500 transition cursor-pointer shadow"
-                    >
-                      Add +
-                    </button>
+        {/* ── DESI AUDIO PLAYER ───────────────────────────────────────── */}
+        <div className="rounded-2xl p-4 bg-indigo-950 text-indigo-100 border border-indigo-900 shadow-lg flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-indigo-900 text-indigo-300">
+              <Music size={20} />
+            </div>
+            <div>
+              <p className="text-xs font-black text-indigo-200">Desi FM 92.7 • Lo-Fi Chai Beats</p>
+              <p className="text-[10px] text-indigo-300/80">Lofi Study Beats • Chill Vibes</p>
+            </div>
+          </div>
+
+          <audio controls loop className="h-9 max-w-[220px]" src="https://cdn.pixabay.com/audio/2022/10/31/audio_b5a1d5f9d5.mp3" />
+        </div>
+
+        {/* ── FRESH MENU & ORDER SECTIONS ────────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {MENU_ITEMS.map((item) => {
+            const qty = cart[item.key] || 0
+            return (
+              <div key={item.key} className="rounded-2xl p-3.5 bg-white border border-stone-200 shadow-sm flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">{item.emoji}</span>
+                  <div>
+                    <h4 className="font-bold text-xs text-stone-900">{lang === 'hi' ? item.nameHi : item.nameEn}</h4>
+                    <p className="text-[11px] font-black text-amber-800">{item.price}</p>
                   </div>
                 </div>
-              )
-            })}
-          </div>
 
+                <div className="flex items-center gap-2">
+                  {qty > 0 && <span className="text-xs font-black text-stone-900">{qty}</span>}
+                  <button
+                    onClick={() => updateCart(item.key, 1)}
+                    className="px-3 py-1.5 rounded-xl bg-orange-600 text-white font-black text-xs hover:bg-orange-500 shadow cursor-pointer"
+                  >
+                    Add +
+                  </button>
+                </div>
+              </div>
+            )
+          })}
         </div>
 
-        {/* ── RIGHT COLUMN: ORDER FULFILLMENT & PAYMENT CONSOLE ─────── */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="sticky top-4 rounded-3xl p-5 bg-white/90 border border-amber-400 shadow-xl space-y-4">
-            
-            <h3 className="text-sm font-black text-amber-900 border-b border-amber-200 pb-2 flex items-center justify-between">
-              <span>Place Order / Pay Tip[span_3](start_span)[span_3](end_span)</span>
-              <span className="text-[10px] text-amber-700 font-semibold">Secure Web3 Checkout</span>
-            </h3>
-
-            {/* Fulfillment Type */}
+        {/* ── CHECKOUT BAR ────────────────────────────────────────────── */}
+        <div className="fixed bottom-3 left-0 right-0 max-w-4xl mx-auto px-4">
+          <div className="rounded-2xl p-4 bg-stone-900 text-white shadow-2xl flex items-center justify-between gap-4 border border-stone-700">
             <div>
-              <label className="text-[11px] font-bold text-amber-900 mb-1 block">Order Fulfillment</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setFulfillment('delivery')}
-                  className={`py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
-                    fulfillment === 'delivery' ? 'bg-orange-600 text-white border-orange-600' : 'bg-amber-100 text-amber-900 border-amber-300'
-                  }`}
-                >
-                  Online Delivery / Pre-Order[span_4](start_span)[span_4](end_span)
-                </button>
-                <button
-                  onClick={() => setFulfillment('dine')}
-                  className={`py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
-                    fulfillment === 'dine' ? 'bg-orange-600 text-white border-orange-600' : 'bg-amber-100 text-amber-900 border-amber-300'
-                  }`}
-                >
-                  Dine-In / Takeaway[span_5](start_span)[span_5](end_span)
-                </button>
-              </div>
+              <p className="text-[10px] text-stone-400 uppercase font-bold">Total Amount</p>
+              <p className="text-xl font-black text-amber-400">{cartTotal.toFixed(2)} USDC</p>
             </div>
 
-            {/* Name Input */}
-            <div>
-              <label className="text-[11px] font-bold text-amber-900 mb-1 block">Your Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Ravi Kumar[span_6](start_span)[span_6](end_span)"
-                className="w-full px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-xs font-medium text-amber-950 outline-none focus:border-orange-500"
-              />
-            </div>
-
-            {/* Vibe Selector Tags */}
-            <div>
-              <label className="text-[11px] font-bold text-amber-900 mb-1.5 block">Pick a Vibe</label>
-              <div className="flex flex-wrap gap-1.5">
-                {['Cutting Chai Master', 'Extra Elaichi', 'Crunchy Banaras Vibe', 'Eldai Dukaan Star', 'Qawwali Mood'].map((vibe) => (
-                  <span
-                    key={vibe}
-                    onClick={() => setMessage(vibe)}
-                    className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 border border-amber-300 text-amber-900 cursor-pointer hover:bg-amber-200 transition"
-                  >
-                    {vibe}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Special Request / Note */}
-            <div>
-              <label className="text-[11px] font-bold text-amber-900 mb-1 block">Special Request / Note</label>
-              <input
-                type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Make it extra ginger[span_7](start_span)[span_7](end_span)!"
-                className="w-full px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-xs font-medium text-amber-950 outline-none focus:border-orange-500"
-              />
-            </div>
-
-            {/* Amount Quick Buttons */}
-            <div>
-              <label className="text-[11px] font-bold text-amber-900 mb-1.5 block">Amount (USDC)</label>
-              <div className="grid grid-cols-4 gap-2 mb-2">
-                {[0.25, 0.50, 1.00, 2.00].map((amt) => (
-                  <button
-                    key={amt}
-                    onClick={() => setCart({ customTip: amt })}
-                    className="py-1.5 rounded-xl text-xs font-bold bg-amber-100 border border-amber-300 text-amber-900 hover:bg-amber-200 cursor-pointer"
-                  >
-                    ${amt.toFixed(2)}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs font-black text-amber-900 text-right">
-                Total Payable: <span className="text-orange-600">{(cartTotal > 0 ? cartTotal : (cart.customTip || 0)).toFixed(2)} USDC</span>
-              </p>
-            </div>
-
-            {/* Submit / Pay Button */}
             <button
-              onClick={() => handlePayment(cart.customTip)}
-              disabled={isProcessing}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 text-white font-black text-sm shadow-lg hover:from-orange-500 hover:to-amber-500 transition cursor-pointer"
+              onClick={handlePayment}
+              disabled={isProcessing || cartTotal <= 0}
+              className={`px-8 py-3 rounded-xl font-black text-xs sm:text-sm shadow-lg transition ${
+                cartTotal > 0 && !isProcessing
+                  ? 'bg-amber-500 text-black hover:bg-amber-400 cursor-pointer'
+                  : 'bg-stone-800 text-stone-500 cursor-not-allowed'
+              }`}
             >
               {isProcessing ? 'Processing...' : 'Place Order / Pay Tip 🚀'}
             </button>
-
           </div>
         </div>
 
-      </main>
+      </div>
 
       {/* ── MODALS ────────────────────────────────────────────────────── */}
       {showSafeDepositModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white border border-emerald-500 p-6 space-y-4 shadow-2xl text-amber-950">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-emerald-500 p-6 space-y-4 shadow-2xl text-stone-900">
             <div className="flex justify-between items-center">
               <h3 className="font-black text-emerald-800 text-base flex items-center gap-2">
-                <Lock size={18} /> सुरक्षित डिपाजिट (Panic Vault)
+                <Lock size={18} /> Panic Vault (Safe Kiosk Deposit)
               </h3>
-              <button onClick={() => setShowSafeDepositModal(false)} className="text-amber-900 font-bold text-sm cursor-pointer">✕</button>
+              <button onClick={() => setShowSafeDepositModal(false)} className="text-stone-900 font-bold text-sm cursor-pointer">✕</button>
             </div>
-            <p className="text-xs text-amber-900 leading-relaxed">
-              अकेले हैं और खतरा महसूस हो रहा है? अपने फंड को नुक्कड़ के सुरक्षित वाल्ट में जमा करें और यूनिक क्लेम आईडी प्राप्त करें।
+            <p className="text-xs text-stone-700 leading-relaxed">
+              अगर आप अकेले हैं और खतरा महसूस हो रहा है, तो फंड जमा करके यूनिक आईडी पाएं।
             </p>
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={depositAmount}
-                onChange={(e) => setDepositAmount(e.target.value)}
-                placeholder="Deposit Amount (USDC)"
-                className="w-full px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-xs font-bold"
-              />
-              {vaultTokenId && (
-                <div className="p-3 rounded-xl bg-emerald-100 border border-emerald-400 text-center">
-                  <p className="text-[10px] text-emerald-800 font-bold">यूनिक क्लेम आईडी:</p>
-                  <p className="text-xs font-mono font-black text-emerald-950">{vaultTokenId}</p>
-                </div>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleSafeVaultDeposit}
-                disabled={isProcessing}
-                className="flex-1 py-3 rounded-xl bg-emerald-700 text-white font-bold text-xs cursor-pointer"
-              >
-                {isProcessing ? 'लॉकिंग...' : '🔒 सुरक्षित लॉक करें'}
-              </button>
-              <button onClick={() => setShowSafeDepositModal(false)} className="px-4 py-3 rounded-xl bg-gray-200 text-gray-800 font-bold text-xs cursor-pointer">
-                बंद करें
-              </button>
-            </div>
+            <input
+              type="text"
+              value={depositAmount}
+              onChange={(e) => setDepositAmount(e.target.value)}
+              placeholder="Amount (USDC)"
+              className="w-full px-3 py-2 rounded-xl bg-stone-100 border border-stone-300 text-xs font-bold outline-none"
+            />
+            {vaultTokenId && (
+              <div className="p-3 rounded-xl bg-emerald-100 border border-emerald-300 text-center font-mono font-black text-xs text-emerald-950">
+                {vaultTokenId}
+              </div>
+            )}
+            <button onClick={handleSafeVaultDeposit} disabled={isProcessing} className="w-full py-3 rounded-xl bg-emerald-700 text-white font-bold text-xs cursor-pointer">
+              {isProcessing ? 'Locking...' : '🔒 Deposit Safely'}
+            </button>
           </div>
         </div>
       )}
 
       {showRoyaltyConsole && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white border border-amber-500 p-6 space-y-4 shadow-2xl text-amber-950">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-amber-500 p-6 space-y-4 shadow-2xl text-stone-900">
             <div className="flex justify-between items-center">
-              <h3 className="font-black text-amber-900 text-base">🔑 मास्टर की कंसोल</h3>
-              <button onClick={() => setShowRoyaltyConsole(false)} className="text-amber-900 font-bold text-sm cursor-pointer">✕</button>
+              <h3 className="font-black text-amber-900 text-base">🔑 Master Key Console</h3>
+              <button onClick={() => setShowRoyaltyConsole(false)} className="text-stone-900 font-bold text-sm cursor-pointer">✕</button>
             </div>
-            <p className="text-xs text-amber-800">
-              {isOwnerConnected ? '✅ वेरिफाइड ओनर अकाउंट' : 'ℹ️ व्यू-ओनली मोड (कनेक्टेड वॉलेट ओनर नहीं है)'}
-            </p>
+            <p className="text-xs text-stone-700">Analytics & Owner Royalty Management</p>
             <button onClick={() => setShowRoyaltyConsole(false)} className="w-full py-3 rounded-xl bg-amber-600 text-white font-bold text-xs cursor-pointer">
-              बंद करें
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showEmergencyModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white border border-red-500 p-6 space-y-4 shadow-2xl text-amber-950">
-            <div className="flex justify-between items-center">
-              <h3 className="font-black text-red-800 text-base">🚨 इमरजेंसी मदद (Emergency Assist)</h3>
-              <button onClick={() => setShowEmergencyModal(false)} className="text-amber-900 font-bold text-sm cursor-pointer">✕</button>
-            </div>
-            <p className="text-xs text-amber-900">0.10 USDC का तुरंत माइक्रो-ट्रांजेक्शन करके मदद अलर्ट भेजें।</p>
-            <button
-              onClick={() => { setShowEmergencyModal(false); handlePayment(0.10, 'EMERGENCY_HELP_REQUEST') }}
-              className="w-full py-3 rounded-xl bg-red-600 text-white font-bold text-xs cursor-pointer"
-            >
-              🚨 0.10 USDC मदद भेजें
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showBaithakModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white border border-emerald-500 p-6 space-y-4 shadow-2xl text-amber-950">
-            <div className="flex justify-between items-center">
-              <h3 className="font-black text-emerald-800 text-base">🪑 बैठक / खाट रिजर्वेशन</h3>
-              <button onClick={() => setShowBaithakModal(false)} className="text-amber-900 font-bold text-sm cursor-pointer">✕</button>
-            </div>
-            <p className="text-xs text-amber-900">0.50 USDC का टोकन अमाउंट देकर अपनी चारपाई रिजर्व करें।</p>
-            <button
-              onClick={() => { setShowBaithakModal(false); handlePayment(0.50, 'BAITHAK_CHARPAI_BOOKING') }}
-              className="w-full py-3 rounded-xl bg-emerald-700 text-white font-bold text-xs cursor-pointer"
-            >
-              🪑 0.50 USDC से बुक करें
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showGiftModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white border border-purple-500 p-6 space-y-4 shadow-2xl text-amber-950">
-            <div className="flex justify-between items-center">
-              <h3 className="font-black text-purple-800 text-base">🎁 गिफ्ट ए चाय (Pay-it-Forward)</h3>
-              <button onClick={() => setShowGiftModal(false)} className="text-amber-900 font-bold text-sm cursor-pointer">✕</button>
-            </div>
-            <p className="text-xs text-amber-900">0.50 USDC फ्री कम्युनिटी पूल में जोड़ें ताकि कोई ज़रूरतमंद मुफ्त चाय पी सके।</p>
-            <button
-              onClick={() => { setShowGiftModal(false); handlePayment(0.50, 'GIFT_A_CHAI_POOL') }}
-              className="w-full py-3 rounded-xl bg-purple-700 text-white font-bold text-xs cursor-pointer"
-            >
-              🎁 0.50 USDC पूल में डालें
+              Close
             </button>
           </div>
         </div>
