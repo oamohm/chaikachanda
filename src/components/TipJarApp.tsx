@@ -19,6 +19,9 @@ import {
   Key,
   QrCode,
   Sparkles,
+  Heart,
+  Calendar,
+  Gift,
 } from 'lucide-react'
 
 // ── CONFIGURATION & CONSTANTS ────────────────────────────────────────────────
@@ -102,16 +105,22 @@ export default function TipJarApp() {
   const [cart, setCart] = useState<Record<string, number>>({})
   const [name, setName] = useState('')
   const [message, setMessage] = useState('')
+  const [fulfillment, setFulfillment] = useState<'dine' | 'delivery'>('dine')
   const [isProcessing, setIsProcessing] = useState(false)
   const [soundMuted, setSoundMuted] = useState(false)
   
   const [contractTotal, setContractTotal] = useState<string>('6.05')
   const [contractTipsCount, setContractTipsCount] = useState<number>(12)
+  const [userOrderCount, setUserOrderCount] = useState<number>(2)
   const [selectedMusic, setSelectedMusic] = useState(DESI_MUSIC_STATIONS[0].src)
 
   // Modals
   const [showRoyaltyConsole, setShowRoyaltyConsole] = useState(false)
   const [showSafeDepositModal, setShowSafeDepositModal] = useState(false)
+  const [showEmergencyModal, setShowEmergencyModal] = useState(false)
+  const [showBaithakModal, setShowBaithakModal] = useState(false)
+  const [showGiftModal, setShowGiftModal] = useState(false)
+  
   const [depositAmount, setDepositAmount] = useState('1.0')
   const [vaultTokenId, setVaultTokenId] = useState<string | null>(null)
 
@@ -205,7 +214,7 @@ export default function TipJarApp() {
         address: TIPJAR_ADDRESS,
         abi: TIPJAR_ABI,
         functionName: 'tip',
-        args: [name || 'Anonymous', customNote || message || 'Chai Order'],
+        args: [name || 'Anonymous', customNote || message || `Order [${fulfillment}]`],
         value: valueInWei,
       })
 
@@ -219,6 +228,7 @@ export default function TipJarApp() {
 
       setCart({})
       setMessage('')
+      setUserOrderCount((prev) => prev + 1)
       fetchOnChainData()
     } catch (err: any) {
       console.error(err)
@@ -298,7 +308,7 @@ export default function TipJarApp() {
             CHAI KA CHANDA
           </h1>
           <p className="text-xs text-amber-800 font-semibold mb-3">
-            Fresh Desi Chai & Crispy Snacks • Pay with USDC[span_1](start_span)[span_1](end_span)
+            Fresh Desi Chai & Crispy Snacks • Pay with USDC[span_0](start_span)[span_0](end_span)
           </p>
 
           <div className="flex flex-wrap justify-center gap-2">
@@ -314,21 +324,38 @@ export default function TipJarApp() {
             >
               <Key size={12} /> {lang === 'hi' ? 'मास्टर की कंसोल' : 'Master Key'}
             </button>
+            <button
+              onClick={() => setShowEmergencyModal(true)}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-red-700 text-white hover:bg-red-600 transition flex items-center gap-1 cursor-pointer shadow"
+            >
+              🚨 {lang === 'hi' ? 'इमरजेंसी' : 'Emergency'}
+            </button>
+            <button
+              onClick={() => setShowBaithakModal(true)}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-800 text-white hover:bg-emerald-700 transition flex items-center gap-1 cursor-pointer shadow"
+            >
+              🪑 {lang === 'hi' ? 'बैठक बुक' : 'Book Baithak'}
+            </button>
+            <button
+              onClick={() => setShowGiftModal(true)}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-700 text-white hover:bg-purple-600 transition flex items-center gap-1 cursor-pointer shadow"
+            >
+              🎁 {lang === 'hi' ? 'गिफ्ट चाय' : 'Gift Chai'}
+            </button>
           </div>
         </div>
       </header>
 
-      {/* ── MAIN DASHBOARD (GRID LAYOUT AS SHOWN IN SCREENSHOT) ──────── */}
+      {/* ── MAIN DASHBOARD (GRID LAYOUT) ────────────────────────────── */}
       <main className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-5">
 
         {/* ── LEFT COLUMN: MENU & MUSIC ────────────────────────────── */}
         <div className="lg:col-span-7 space-y-4">
           
-          {/* Top Quick Actions Bar */}
           <div className="flex flex-wrap gap-2">
             <div className="flex-1 min-w-[140px] p-3 rounded-2xl bg-amber-200/70 border border-amber-400/50 flex items-center justify-between">
               <span className="text-xs font-bold text-amber-900 flex items-center gap-1">
-                <QrCode size={14} /> Atithi Devo Bhava
+                <QrCode size={14} /> Atithi Devo Bhava • Welcome
               </span>
               <span className="text-[10px] font-black bg-amber-600 text-white px-2 py-0.5 rounded-full">Active</span>
             </div>
@@ -339,7 +366,7 @@ export default function TipJarApp() {
             <div>
               <p className="text-[10px] uppercase font-bold tracking-wider opacity-90">Today's Special</p>
               <p className="text-xs font-black">Cutting Chai + 2 Samosas</p>
-              <p className="text-[11px] font-medium opacity-90">1.00 USDC • SAVE 25% • Fresh Elaichi Blend</p>
+              <p className="text-[11px] font-medium opacity-90">1.00 USDC • SAVE 25% • Fresh Elaichi Blend[span_1](start_span)[span_1](end_span)</p>
             </div>
             <span className="px-2.5 py-1 bg-black/30 rounded-xl text-xs font-bold">HOT</span>
           </div>
@@ -394,7 +421,7 @@ export default function TipJarApp() {
 
           {/* Fresh Desi Menu Grid */}
           <div className="space-y-2.5">
-            <h3 className="text-xs font-black text-amber-900 uppercase tracking-wide px-1">Fresh Desi Menu</h3>
+            <h3 className="text-xs font-black text-amber-900 uppercase tracking-wide px-1">Fresh Desi Menu[span_2](start_span)[span_2](end_span)</h3>
             {MENU_ITEMS.map((item) => {
               const qty = cart[item.key] || 0
               return (
@@ -431,7 +458,7 @@ export default function TipJarApp() {
           <div className="sticky top-4 rounded-3xl p-5 bg-white/90 border border-amber-400 shadow-xl space-y-4">
             
             <h3 className="text-sm font-black text-amber-900 border-b border-amber-200 pb-2 flex items-center justify-between">
-              <span>Place Order / Pay Tip</span>
+              <span>Place Order / Pay Tip[span_3](start_span)[span_3](end_span)</span>
               <span className="text-[10px] text-amber-700 font-semibold">Secure Web3 Checkout</span>
             </h3>
 
@@ -439,11 +466,21 @@ export default function TipJarApp() {
             <div>
               <label className="text-[11px] font-bold text-amber-900 mb-1 block">Order Fulfillment</label>
               <div className="grid grid-cols-2 gap-2">
-                <button className="py-2 rounded-xl text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                  Online Delivery / Pre-Order
+                <button
+                  onClick={() => setFulfillment('delivery')}
+                  className={`py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                    fulfillment === 'delivery' ? 'bg-orange-600 text-white border-orange-600' : 'bg-amber-100 text-amber-900 border-amber-300'
+                  }`}
+                >
+                  Online Delivery / Pre-Order[span_4](start_span)[span_4](end_span)
                 </button>
-                <button className="py-2 rounded-xl text-xs font-bold bg-orange-600 text-white shadow">
-                  Dine-In / Takeaway
+                <button
+                  onClick={() => setFulfillment('dine')}
+                  className={`py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                    fulfillment === 'dine' ? 'bg-orange-600 text-white border-orange-600' : 'bg-amber-100 text-amber-900 border-amber-300'
+                  }`}
+                >
+                  Dine-In / Takeaway[span_5](start_span)[span_5](end_span)
                 </button>
               </div>
             </div>
@@ -455,7 +492,7 @@ export default function TipJarApp() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Ravi Kumar"
+                placeholder="e.g. Ravi Kumar[span_6](start_span)[span_6](end_span)"
                 className="w-full px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-xs font-medium text-amber-950 outline-none focus:border-orange-500"
               />
             </div>
@@ -483,7 +520,7 @@ export default function TipJarApp() {
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Make it extra ginger!"
+                placeholder="Make it extra ginger[span_7](start_span)[span_7](end_span)!"
                 className="w-full px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-xs font-medium text-amber-950 outline-none focus:border-orange-500"
               />
             </div>
@@ -577,6 +614,60 @@ export default function TipJarApp() {
             </p>
             <button onClick={() => setShowRoyaltyConsole(false)} className="w-full py-3 rounded-xl bg-amber-600 text-white font-bold text-xs cursor-pointer">
               बंद करें
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showEmergencyModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-red-500 p-6 space-y-4 shadow-2xl text-amber-950">
+            <div className="flex justify-between items-center">
+              <h3 className="font-black text-red-800 text-base">🚨 इमरजेंसी मदद (Emergency Assist)</h3>
+              <button onClick={() => setShowEmergencyModal(false)} className="text-amber-900 font-bold text-sm cursor-pointer">✕</button>
+            </div>
+            <p className="text-xs text-amber-900">0.10 USDC का तुरंत माइक्रो-ट्रांजेक्शन करके मदद अलर्ट भेजें।</p>
+            <button
+              onClick={() => { setShowEmergencyModal(false); handlePayment(0.10, 'EMERGENCY_HELP_REQUEST') }}
+              className="w-full py-3 rounded-xl bg-red-600 text-white font-bold text-xs cursor-pointer"
+            >
+              🚨 0.10 USDC मदद भेजें
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showBaithakModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-emerald-500 p-6 space-y-4 shadow-2xl text-amber-950">
+            <div className="flex justify-between items-center">
+              <h3 className="font-black text-emerald-800 text-base">🪑 बैठक / खाट रिजर्वेशन</h3>
+              <button onClick={() => setShowBaithakModal(false)} className="text-amber-900 font-bold text-sm cursor-pointer">✕</button>
+            </div>
+            <p className="text-xs text-amber-900">0.50 USDC का टोकन अमाउंट देकर अपनी चारपाई रिजर्व करें।</p>
+            <button
+              onClick={() => { setShowBaithakModal(false); handlePayment(0.50, 'BAITHAK_CHARPAI_BOOKING') }}
+              className="w-full py-3 rounded-xl bg-emerald-700 text-white font-bold text-xs cursor-pointer"
+            >
+              🪑 0.50 USDC से बुक करें
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showGiftModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-purple-500 p-6 space-y-4 shadow-2xl text-amber-950">
+            <div className="flex justify-between items-center">
+              <h3 className="font-black text-purple-800 text-base">🎁 गिफ्ट ए चाय (Pay-it-Forward)</h3>
+              <button onClick={() => setShowGiftModal(false)} className="text-amber-900 font-bold text-sm cursor-pointer">✕</button>
+            </div>
+            <p className="text-xs text-amber-900">0.50 USDC फ्री कम्युनिटी पूल में जोड़ें ताकि कोई ज़रूरतमंद मुफ्त चाय पी सके।</p>
+            <button
+              onClick={() => { setShowGiftModal(false); handlePayment(0.50, 'GIFT_A_CHAI_POOL') }}
+              className="w-full py-3 rounded-xl bg-purple-700 text-white font-bold text-xs cursor-pointer"
+            >
+              🎁 0.50 USDC पूल में डालें
             </button>
           </div>
         </div>
