@@ -32,7 +32,6 @@ const ARC_TESTNET_CHAIN_ID = 5042002
 const ARC_RPC = 'https://rpc.testnet.arc.network'
 const TIPJAR_ADDRESS = '0xd385945e5b5cdf022b99e4468a37ec045cd24197' as `0x${string}`
 const OWNER_ADDRESS = '0x1C248d40eeA69a4662AF4F475D8dbA06d556f628'
-const FAUCET_URL = 'https://faucet.circle.com'
 
 const TIPJAR_ABI = [
   {
@@ -93,16 +92,14 @@ const MENU_ITEMS: MenuItem[] = [
   { key: 'kulhad', nameHi: 'विशेष कुल्हड़', nameEn: 'Kulhad Special', emoji: '🏺✨', price: '2.50 USDC', amount: 2.50 },
 ]
 
-const GLOBAL_MUSIC_STATIONS = [
-  { country: '🇮🇳 India (Desi Lofi)', title: 'Desi Chai Beats', src: 'https://cdn.pixabay.com/audio/2022/10/31/audio_b5a1d5f9d5.mp3' },
-  { country: '🇯🇵 Japan (Tokyo Chill)', title: 'Sakura Ambient', src: 'https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73467.mp3' },
-  { country: '🇺🇸 USA (Sunset Lo-Fi)', title: 'Pacific Vibes', src: 'https://cdn.pixabay.com/audio/2021/11/25/audio_5358a6a049.mp3' },
-  { country: '🇫🇷 France (Paris Café)', title: 'Accordion Lounge', src: 'https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf756.mp3' },
+const DESI_MUSIC_STATIONS = [
+  { title: '🍵 देसी लो-फाई चाय बीट्स (Desi Lofi)', src: 'https://cdn.pixabay.com/audio/2022/10/31/audio_b5a1d5f9d5.mp3' },
+  { title: '🪈 बांसुरी की मधुर धुन (Flute Melody)', src: 'https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73467.mp3' },
+  { title: '🌾 ग्रामीण संध्या गूंज (Village Evening)', src: 'https://cdn.pixabay.com/audio/2021/11/25/audio_5358a6a049.mp3' },
 ]
 
 export default function TipJarApp() {
   const { address, isConnected, chainId } = useAccount()
-  const { disconnect } = useDisconnect()
   const { data: walletClient } = useWalletClient()
   const publicClient = usePublicClient()
   const { switchChain } = useSwitchChain()
@@ -118,8 +115,8 @@ export default function TipJarApp() {
   // On-chain state
   const [contractTotal, setContractTotal] = useState<string>('0.00')
   const [contractTipsCount, setContractTipsCount] = useState<number>(0)
-  const [freeChaiPool, setFreeChaiPool] = useState<number>(3)
   const [userOrderCount, setUserOrderCount] = useState<number>(2)
+  const [selectedMusic, setSelectedMusic] = useState(DESI_MUSIC_STATIONS[0].src)
 
   // Modals
   const [showRoyaltyConsole, setShowRoyaltyConsole] = useState(false)
@@ -353,7 +350,7 @@ export default function TipJarApp() {
         <div className="flex rounded-2xl p-1 bg-amber-950/40 border border-amber-900/40 mb-5">
           {[
             { id: 'order', labelHi: '📜 मेनू व ऑर्डर', labelEn: '📜 Menu & Order' },
-            { id: 'hub', labelHi: '📻 ग्लोबल रेडियो', labelEn: '📻 Global Radio' },
+            { id: 'hub', labelHi: '📻 देसी संगीत', labelEn: '📻 Desi Music' },
             { id: 'perks', labelHi: '🏺 लॉयल्टी पास', labelEn: '🏺 Loyalty Pass' },
             { id: 'vault', labelHi: '📊 तिजोरी', labelEn: '📊 Vault' },
           ].map((tab) => (
@@ -476,34 +473,43 @@ export default function TipJarApp() {
           </div>
         )}
 
-        {/* ── TAB 2: GLOBAL RADIO HUB ─────────────────────────────────── */}
+        {/* ── TAB 2: DESI MUSIC PLAYER ─────────────────────────────────── */}
         {activeTab === 'hub' && (
           <div className="space-y-4">
-            <div className="rounded-3xl p-5 border border-indigo-500/30 bg-gradient-to-br from-indigo-950/60 to-purple-950/60 space-y-4">
+            <div className="rounded-3xl p-5 border border-amber-500/30 bg-gradient-to-br from-amber-950/60 to-stone-950/60 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 text-indigo-300">
+                <div className="p-2.5 rounded-2xl bg-amber-500/20 border border-amber-400/30 text-amber-300">
                   <Globe size={24} />
                 </div>
                 <div>
-                  <h3 className="font-black text-base text-indigo-200">
-                    {lang === 'hi' ? 'ग्लोबल कल्चर रेडियो' : 'Global Culture Radio'}
+                  <h3 className="font-black text-base text-amber-200">
+                    {lang === 'hi' ? 'देशी संगीत स्टेशन' : 'Desi Music Station'}
                   </h3>
-                  <p className="text-xs text-indigo-300/70">
-                    {lang === 'hi' ? 'चाय की चुस्की के साथ दुनिया के सुर' : 'Worldwide lo-fi vibes at the kiosk'}
+                  <p className="text-xs text-amber-300/70">
+                    {lang === 'hi' ? 'नुक्कड़ पर चाय के साथ हल्की सांस्कृतिक धुनें' : 'Light cultural tunes for the kiosk'}
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                {GLOBAL_MUSIC_STATIONS.map((st, i) => (
-                  <div key={i} className="p-3 rounded-2xl bg-black/40 border border-indigo-900/40 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-indigo-200">{st.country}</p>
-                      <p className="text-[10px] text-indigo-400/70">{st.title}</p>
-                    </div>
-                    <audio controls className="h-8 max-w-[140px] opacity-80" src={st.src} />
-                  </div>
-                ))}
+              <div className="space-y-3">
+                <select
+                  value={selectedMusic}
+                  onChange={(e) => setSelectedMusic(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl bg-black/50 border border-amber-700/50 text-xs font-bold text-amber-200 outline-none"
+                >
+                  {DESI_MUSIC_STATIONS.map((st, i) => (
+                    <option key={i} value={st.src}>
+                      {st.title}
+                    </option>
+                  ))}
+                </select>
+
+                <div className="p-3 rounded-2xl bg-black/40 border border-amber-900/40 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-amber-300">
+                    {lang === 'hi' ? 'प्लेयर' : 'Audio Player'}
+                  </span>
+                  <audio controls autoPlay loop className="h-8 max-w-[200px]" src={selectedMusic} />
+                </div>
               </div>
             </div>
           </div>
@@ -579,7 +585,6 @@ export default function TipJarApp() {
 
       {/* ── MODALS ────────────────────────────────────────────────────── */}
 
-      {/* Royalty Console Modal */}
       {showRoyaltyConsole && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-sm rounded-3xl bg-stone-900 border border-amber-500/40 p-5 space-y-4">
@@ -587,7 +592,6 @@ export default function TipJarApp() {
               <h3 className="font-black text-amber-300 text-sm">🔑 {lang === 'hi' ? 'मास्टर की कंसोल' : 'Master Key Console'}</h3>
               <button onClick={() => setShowRoyaltyConsole(false)} className="text-amber-500 font-bold text-xs">✕</button>
             </div>
-
             {isOwnerConnected ? (
               <div className="p-3 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-xs text-emerald-300">
                 ✅ Verified Owner Account
@@ -597,18 +601,13 @@ export default function TipJarApp() {
                 ℹ️ View-Only Mode (Connected wallet is not Contract Owner)
               </div>
             )}
-
-            <button
-              onClick={() => setShowRoyaltyConsole(false)}
-              className="w-full py-2.5 rounded-xl bg-amber-500 text-black font-bold text-xs"
-            >
+            <button onClick={() => setShowRoyaltyConsole(false)} className="w-full py-2.5 rounded-xl bg-amber-500 text-black font-bold text-xs">
               {lang === 'hi' ? 'बंद करें' : 'Close'}
             </button>
           </div>
         </div>
       )}
 
-      {/* Emergency Assist Modal */}
       {showEmergencyModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-sm rounded-3xl bg-red-950/90 border border-red-500/40 p-5 space-y-4">
@@ -620,10 +619,7 @@ export default function TipJarApp() {
               {lang === 'hi' ? '0.10 USDC का तुरंत माइक्रो-ट्रांजेक्शन करके मदद अलर्ट भेजें।' : 'Send instant help request with 0.10 USDC micro-tx.'}
             </p>
             <button
-              onClick={() => {
-                setShowEmergencyModal(false)
-                handlePayment(0.10, 'EMERGENCY_HELP_REQUEST')
-              }}
+              onClick={() => { setShowEmergencyModal(false); handlePayment(0.10, 'EMERGENCY_HELP_REQUEST') }}
               className="w-full py-3 rounded-xl bg-red-600 text-white font-black text-xs hover:bg-red-500"
             >
               🚨 {lang === 'hi' ? '0.10 USDC मदद भेजें' : 'Send 0.10 USDC Help'}
@@ -632,7 +628,6 @@ export default function TipJarApp() {
         </div>
       )}
 
-      {/* Baithak Modal */}
       {showBaithakModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-sm rounded-3xl bg-emerald-950/90 border border-emerald-500/40 p-5 space-y-4">
@@ -644,10 +639,7 @@ export default function TipJarApp() {
               {lang === 'hi' ? '0.50 USDC का टोकन अमाउंट देकर अपनी चारपाई रिजर्व करें।' : 'Reserve your spot with 0.50 USDC deposit.'}
             </p>
             <button
-              onClick={() => {
-                setShowBaithakModal(false)
-                handlePayment(0.50, 'BAITHAK_CHARPAI_BOOKING')
-              }}
+              onClick={() => { setShowBaithakModal(false); handlePayment(0.50, 'BAITHAK_CHARPAI_BOOKING') }}
               className="w-full py-3 rounded-xl bg-emerald-600 text-white font-black text-xs hover:bg-emerald-500"
             >
               🪑 {lang === 'hi' ? '0.50 USDC से बुक करें' : 'Reserve with 0.50 USDC'}
@@ -656,7 +648,6 @@ export default function TipJarApp() {
         </div>
       )}
 
-      {/* Gift Modal */}
       {showGiftModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-sm rounded-3xl bg-purple-950/90 border border-purple-500/40 p-5 space-y-4">
@@ -668,10 +659,7 @@ export default function TipJarApp() {
               {lang === 'hi' ? '0.50 USDC फ्री पूल में जोड़ें ताकि कोई ज़रूरतमंद मुफ्त चाय पी सके।' : 'Add 0.50 USDC to the free pool for someone in need.'}
             </p>
             <button
-              onClick={() => {
-                setShowGiftModal(false)
-                handlePayment(0.50, 'GIFT_A_CHAI_POOL')
-              }}
+              onClick={() => { setShowGiftModal(false); handlePayment(0.50, 'GIFT_A_CHAI_POOL') }}
               className="w-full py-3 rounded-xl bg-purple-600 text-white font-black text-xs hover:bg-purple-500"
             >
               🎁 {lang === 'hi' ? '0.50 USDC पूल में डालें' : 'Add 0.50 USDC to Pool'}
