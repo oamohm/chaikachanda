@@ -27,7 +27,7 @@ import {
   PackageCheck,
 } from 'lucide-react'
 
-// ── CONFIGURATION & CONSTANTS ────────────────────────────────────────────────
+// CONFIGURATION & CONSTANTS
 const ARC_TESTNET_CHAIN_ID = 5042002
 const ARC_RPC = 'https://rpc.testnet.arc.network'
 const TIPJAR_ADDRESS = '0xd385945e5b5cdf022b99e4468a37ec045cd24197' as `0x${string}`
@@ -104,6 +104,10 @@ export default function TipJarApp() {
   // Modals
   const [showSafeDepositModal, setShowSafeDepositModal] = useState(false)
   const [showRoyaltyConsole, setShowRoyaltyConsole] = useState(false)
+  const [showEmergencyModal, setShowEmergencyModal] = useState(false)
+  const [showBaithakModal, setShowBaithakModal] = useState(false)
+  const [showGiftModal, setShowGiftModal] = useState(false)
+
   const [depositAmount, setDepositAmount] = useState('1.0')
   const [vaultTokenId, setVaultTokenId] = useState<string | null>(null)
 
@@ -248,12 +252,12 @@ export default function TipJarApp() {
   return (
     <div className="min-h-screen w-full font-sans pb-28 px-3 sm:px-6 text-amber-950" style={{ background: '#fdf6e2' }}>
       
-      {/* ── TOP HEADER / TAGLINES & SOCIALS ──────────────────────────── */}
+      {/* TOP HEADER / TAGLINES & SOCIALS */}
       <header className="max-w-5xl mx-auto pt-3 mb-4 space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-amber-900 px-2">
           <div className="flex items-center gap-3">
-            <span className="bg-amber-200 px-2.5 py-1 rounded-full border border-amber-400">🌿 Cash Today, Credit Tomorrow[span_2](start_span)[span_2](end_span)</span>
-            <span className="hidden sm:inline opacity-80">☕ Chai Pe Charcha — No Ledger Log[span_3](start_span)[span_3](end_span)</span>
+            <span className="bg-amber-200 px-2.5 py-1 rounded-full border border-amber-400">🌿 Cash Today, Credit Tomorrow</span>
+            <span className="hidden sm:inline opacity-80">☕ Chai Pe Charcha — No Ledger Log</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -267,20 +271,19 @@ export default function TipJarApp() {
           </div>
         </div>
 
-        {/* ── HERO BANNER ────────────────────────────────────────────── */}
+        {/* HERO BANNER */}
         <div className="rounded-3xl p-6 border border-amber-500/40 shadow-xl relative overflow-hidden text-center"
              style={{ background: 'linear-gradient(135deg, #f7ebd0 0%, #fae1af 100%)' }}>
           
           <h1 className="text-3xl sm:text-4xl font-black text-amber-900 tracking-wide drop-shadow-sm mb-1">
-            CHAI KA CHANDA[span_4](start_span)[span_4](end_span)
+            CHAI KA CHANDA
           </h1>
           <p className="text-xs font-bold text-amber-800 mb-3">
-            WEB3 SMART CHAI STALL • Fresh Desi Chai & Crispy Snacks • Pay with USDC[span_5](start_span)[span_5](end_span)
+            WEB3 SMART CHAI STALL • Fresh Desi Chai & Crispy Snacks • Pay with USDC
           </p>
 
-          {/* 100% Private & Secure Banner */}
           <div className="max-w-md mx-auto mb-4 py-1.5 px-3 rounded-full bg-emerald-100 border border-emerald-400 text-emerald-900 text-xs font-black flex items-center justify-center gap-1.5 shadow-sm">
-            <ShieldCheck size={14} className="text-emerald-700" /> 100% Private & Secure — Zero Public Log[span_6](start_span)[span_6](end_span)
+            <ShieldCheck size={14} className="text-emerald-700" /> 100% Private & Secure — Zero Public Log
           </div>
 
           <div className="flex flex-wrap justify-center gap-2">
@@ -290,14 +293,23 @@ export default function TipJarApp() {
             <button onClick={() => setShowRoyaltyConsole(true)} className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-700 text-white hover:bg-amber-600 transition flex items-center gap-1 cursor-pointer shadow">
               <Key size={12} /> {lang === 'hi' ? 'मास्टर की कंसोल' : 'Master Key'}
             </button>
+            <button onClick={() => setShowEmergencyModal(true)} className="px-3 py-1.5 rounded-xl text-xs font-bold bg-red-700 text-white hover:bg-red-600 transition flex items-center gap-1 cursor-pointer shadow">
+              🚨 {lang === 'hi' ? 'इमरजेंसी' : 'Emergency'}
+            </button>
+            <button onClick={() => setShowBaithakModal(true)} className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-800 text-white hover:bg-emerald-700 transition flex items-center gap-1 cursor-pointer shadow">
+              🪑 {lang === 'hi' ? 'बैठक बुक' : 'Book Baithak'}
+            </button>
+            <button onClick={() => setShowGiftModal(true)} className="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-700 text-white hover:bg-purple-600 transition flex items-center gap-1 cursor-pointer shadow">
+              🎁 {lang === 'hi' ? 'गिफ्ट चाय' : 'Gift Chai'}
+            </button>
           </div>
         </div>
       </header>
 
-      {/* ── MAIN GRID LAYOUT ────────────────────────────────────────── */}
+      {/* MAIN GRID LAYOUT */}
       <main className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-        {/* ── LEFT COLUMN: MENU, SPECIALS & LOYALTY CARD ────────────── */}
+        {/* LEFT COLUMN: MENU, SPECIALS & LOYALTY CARD */}
         <div className="lg:col-span-7 space-y-4">
           
           {/* Digital Kulhad NFT Loyalty Card */}
@@ -308,13 +320,13 @@ export default function TipJarApp() {
                 🏺
               </div>
               <div>
-                <p className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">Digital Kulhad NFT Loyalty Card[span_7](start_span)[span_7](end_span)</p>
-                <h4 className="text-xs font-bold text-amber-100">Unique on-chain collectibles & loyalty points unlocked on every successful order[span_8](start_span)[span_8](end_span)</h4>
+                <p className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">Digital Kulhad NFT Loyalty Card</p>
+                <h4 className="text-xs font-bold text-amber-100">Unique on-chain collectibles & loyalty points unlocked on every successful order</h4>
               </div>
             </div>
             <div className="text-right pl-2">
               <span className="text-xs font-black text-amber-300 bg-black/40 px-2.5 py-1 rounded-xl border border-amber-500/30">
-                {loyaltyPoints} PTS[span_9](start_span)[span_9](end_span)
+                {loyaltyPoints} PTS
               </span>
             </div>
           </div>
@@ -322,18 +334,18 @@ export default function TipJarApp() {
           {/* Today's Special */}
           <div className="p-3.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md flex items-center justify-between">
             <div>
-              <p className="text-[10px] uppercase font-bold tracking-wider opacity-90">Today's Special[span_10](start_span)[span_10](end_span)</p>
+              <p className="text-[10px] uppercase font-bold tracking-wider opacity-90">Today's Special</p>
               <p className="text-xs font-black">Cutting Chai + 2 Samosas</p>
-              <p className="text-[11px] font-medium opacity-90">1.00 USDC • SAVE 20% • Fresh Elaichi Blend[span_11](start_span)[span_11](end_span)</p>
+              <p className="text-[11px] font-medium opacity-90">1.00 USDC • SAVE 20% • Fresh Elaichi Blend</p>
             </div>
-            <span className="px-2.5 py-1 bg-black/30 rounded-xl text-xs font-bold">HOT[span_12](start_span)[span_12](end_span)</span>
+            <span className="px-2.5 py-1 bg-black/30 rounded-xl text-xs font-bold">HOT</span>
           </div>
 
           {/* Desi FM Music Player */}
           <div className="p-3 rounded-2xl bg-amber-900 text-amber-100 flex items-center justify-between gap-3 shadow-md">
             <div className="flex items-center gap-2">
               <Music size={16} className="text-amber-400" />
-              <span className="text-xs font-bold">Desi FM 92.7 — Lo-Fi Chai Beats[span_13](start_span)[span_13](end_span)</span>
+              <span className="text-xs font-bold">Desi FM 92.7 — Lo-Fi Chai Beats</span>
             </div>
             <audio controls loop className="h-8 max-w-[140px]" src="https://cdn.pixabay.com/audio/2022/10/31/audio_b5a1d5f9d5.mp3" />
           </div>
@@ -341,18 +353,18 @@ export default function TipJarApp() {
           {/* Analytics / Stats Bar */}
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-2xl bg-amber-200/60 border border-amber-400/60 text-center">
-              <p className="text-[10px] font-bold text-amber-800">Total Sales[span_14](start_span)[span_14](end_span)</p>
-              <p className="text-base font-black text-amber-900">{contractTotal} USDC[span_15](start_span)[span_15](end_span)</p>
+              <p className="text-[10px] font-bold text-amber-800">Total Sales</p>
+              <p className="text-base font-black text-amber-900">{contractTotal} USDC</p>
             </div>
             <div className="p-3 rounded-2xl bg-amber-200/60 border border-amber-400/60 text-center">
-              <p className="text-[10px] font-bold text-amber-800">In Wallet[span_16](start_span)[span_16](end_span)</p>
-              <p className="text-base font-black text-amber-900">954.66 USDC[span_17](start_span)[span_17](end_span)</p>
+              <p className="text-[10px] font-bold text-amber-800">In Wallet</p>
+              <p className="text-base font-black text-amber-900">954.66 USDC</p>
             </div>
           </div>
 
           {/* Menu Items Grid */}
           <div className="space-y-2.5">
-            <h3 className="text-xs font-black text-amber-900 uppercase tracking-wide px-1">Fresh Desi Menu[span_18](start_span)[span_18](end_span)</h3>
+            <h3 className="text-xs font-black text-amber-900 uppercase tracking-wide px-1">Fresh Desi Menu</h3>
             {MENU_ITEMS.map((item) => {
               const qty = cart[item.key] || 0
               return (
@@ -381,18 +393,18 @@ export default function TipJarApp() {
 
         </div>
 
-        {/* ── RIGHT COLUMN: ORDER CONSOLE & VERIFIED MERCHANT ─────── */}
+        {/* RIGHT COLUMN: ORDER CONSOLE & VERIFIED MERCHANT */}
         <div className="lg:col-span-5 space-y-4">
           <div className="sticky top-4 rounded-3xl p-5 bg-white/95 border border-amber-400 shadow-xl space-y-4">
             
             <h3 className="text-sm font-black text-amber-900 border-b border-amber-200 pb-2 flex items-center justify-between">
-              <span>Place Order / Pay Tip[span_19](start_span)[span_19](end_span)</span>
+              <span>Place Order / Pay Tip</span>
               <span className="text-[10px] text-amber-700 font-semibold">Order Ticket</span>
             </h3>
 
             {/* Fulfillment Type */}
             <div>
-              <label className="text-[11px] font-bold text-amber-900 mb-1 block">Order Fulfillment[span_20](start_span)[span_20](end_span)</label>
+              <label className="text-[11px] font-bold text-amber-900 mb-1 block">Order Fulfillment</label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setFulfillment('delivery')}
@@ -400,7 +412,7 @@ export default function TipJarApp() {
                     fulfillment === 'delivery' ? 'bg-orange-600 text-white border-orange-600' : 'bg-amber-100 text-amber-900 border-amber-300'
                   }`}
                 >
-                  Online Delivery / Pre-Order[span_21](start_span)[span_21](end_span)
+                  Online Delivery / Pre-Order
                 </button>
                 <button
                   onClick={() => setFulfillment('dine')}
@@ -408,19 +420,19 @@ export default function TipJarApp() {
                     fulfillment === 'dine' ? 'bg-orange-600 text-white border-orange-600' : 'bg-amber-100 text-amber-900 border-amber-300'
                   }`}
                 >
-                  Dine-In / Takeaway[span_22](start_span)[span_22](end_span)
+                  Dine-In / Takeaway
                 </button>
               </div>
             </div>
 
             {/* Name Input */}
             <div>
-              <label className="text-[11px] font-bold text-amber-900 mb-1 block">Your Name[span_23](start_span)[span_23](end_span)</label>
+              <label className="text-[11px] font-bold text-amber-900 mb-1 block">Your Name</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Ravi Kumar[span_24](start_span)[span_24](end_span)"
+                placeholder="e.g. Ravi Kumar"
                 className="w-full px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-xs font-medium text-amber-950 outline-none focus:border-orange-500"
               />
             </div>
@@ -428,13 +440,13 @@ export default function TipJarApp() {
             {/* Verified Merchant Address Box */}
             <div className="p-3 rounded-2xl bg-amber-50 border border-amber-300 space-y-2">
               <div className="flex justify-between items-center text-[11px]">
-                <span className="font-bold text-amber-900">Verified Merchant Address (Es...)[span_25](start_span)[span_25](end_span)</span>
+                <span className="font-bold text-amber-900">Verified Merchant Address (Es...)</span>
                 <div className="flex gap-1.5">
-                  <span className="text-emerald-700 font-bold flex items-center gap-0.5 cursor-pointer hover:underline text-[10px]">
-                    ✓ Set Official Stall Address[span_26](start_span)[span_26](end_span)
+                  <span onClick={() => setMerchantAddress(DEFAULT_MERCHANT_ADDRESS)} className="text-emerald-700 font-bold flex items-center gap-0.5 cursor-pointer hover:underline text-[10px]">
+                    ✓ Set Official Stall Address
                   </span>
-                  <span className="text-amber-800 font-bold flex items-center gap-0.5 cursor-pointer hover:underline text-[10px]">
-                    <Camera size={10} /> Camera Scan[span_27](start_span)[span_27](end_span)
+                  <span onClick={() => toast.info('Camera Scanner Activated')} className="text-amber-800 font-bold flex items-center gap-0.5 cursor-pointer hover:underline text-[10px]">
+                    <Camera size={10} /> Camera Scan
                   </span>
                 </div>
               </div>
@@ -448,7 +460,7 @@ export default function TipJarApp() {
 
             {/* Vibe Selector Tags */}
             <div>
-              <label className="text-[11px] font-bold text-amber-900 mb-1.5 block">Pick a Vibe[span_28](start_span)[span_28](end_span)</label>
+              <label className="text-[11px] font-bold text-amber-900 mb-1.5 block">Pick a Vibe</label>
               <div className="flex flex-wrap gap-1.5">
                 {['Cutting Chai Master', 'Extra Elaichi', 'Crunchy Banaras Vibe', 'Chai Dukaan Star', 'Qawwali Mood'].map((vibe) => (
                   <span
@@ -464,19 +476,19 @@ export default function TipJarApp() {
 
             {/* Special Request */}
             <div>
-              <label className="text-[11px] font-bold text-amber-900 mb-1 block">Special Request / Note[span_29](start_span)[span_29](end_span)</label>
+              <label className="text-[11px] font-bold text-amber-900 mb-1 block">Special Request / Note</label>
               <input
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Make it extra ginger[span_30](start_span)[span_30](end_span)!"
+                placeholder="Make it extra ginger!"
                 className="w-full px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-xs font-medium text-amber-950 outline-none focus:border-orange-500"
               />
             </div>
 
             {/* Amount Quick Buttons */}
             <div>
-              <label className="text-[11px] font-bold text-amber-900 mb-1.5 block">Amount (USDC)[span_31](start_span)[span_31](end_span)</label>
+              <label className="text-[11px] font-bold text-amber-900 mb-1.5 block">Amount (USDC)</label>
               <div className="grid grid-cols-4 gap-2 mb-2">
                 {[0.25, 0.50, 1.00, 2.00].map((amt) => (
                   <button
@@ -484,7 +496,7 @@ export default function TipJarApp() {
                     onClick={() => setCart({ customTip: amt })}
                     className="py-1.5 rounded-xl text-xs font-bold bg-amber-100 border border-amber-300 text-amber-900 hover:bg-amber-200 cursor-pointer"
                   >
-                    ${amt.toFixed(2)}[span_32](start_span)[span_32](end_span)
+                    ${amt.toFixed(2)}
                   </button>
                 ))}
               </div>
@@ -499,7 +511,7 @@ export default function TipJarApp() {
               disabled={isProcessing}
               className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 text-white font-black text-sm shadow-lg hover:from-orange-500 hover:to-amber-500 transition cursor-pointer"
             >
-              {isProcessing ? 'Processing...' : 'Place Order / Pay Tip 🚀[span_33](start_span)[span_33](end_span)'}
+              {isProcessing ? 'Processing...' : 'Place Order / Pay Tip 🚀'}
             </button>
 
           </div>
@@ -507,7 +519,7 @@ export default function TipJarApp() {
 
       </main>
 
-      {/* ── MODALS ────────────────────────────────────────────────────── */}
+      {/* MODALS */}
       {showSafeDepositModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-md rounded-3xl bg-white border border-emerald-500 p-6 space-y-4 shadow-2xl text-amber-950">
@@ -549,6 +561,60 @@ export default function TipJarApp() {
             <p className="text-xs text-amber-800">Analytics, Royalty, and Nominee Management</p>
             <button onClick={() => setShowRoyaltyConsole(false)} className="w-full py-3 rounded-xl bg-amber-600 text-white font-bold text-xs cursor-pointer">
               Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showEmergencyModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-red-500 p-6 space-y-4 shadow-2xl text-amber-950">
+            <div className="flex justify-between items-center">
+              <h3 className="font-black text-red-800 text-base">🚨 इमरजेंसी मदद (Emergency Assist)</h3>
+              <button onClick={() => setShowEmergencyModal(false)} className="text-amber-900 font-bold text-sm cursor-pointer">✕</button>
+            </div>
+            <p className="text-xs text-amber-900">0.10 USDC का तुरंत माइक्रो-ट्रांजेक्शन करके मदद अलर्ट भेजें।</p>
+            <button
+              onClick={() => { setShowEmergencyModal(false); handlePayment(0.10) }}
+              className="w-full py-3 rounded-xl bg-red-600 text-white font-bold text-xs cursor-pointer"
+            >
+              🚨 0.10 USDC मदद भेजें
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showBaithakModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-emerald-500 p-6 space-y-4 shadow-2xl text-amber-950">
+            <div className="flex justify-between items-center">
+              <h3 className="font-black text-emerald-800 text-base">🪑 बैठक / खाट रिजर्वेशन</h3>
+              <button onClick={() => setShowBaithakModal(false)} className="text-amber-900 font-bold text-sm cursor-pointer">✕</button>
+            </div>
+            <p className="text-xs text-amber-900">0.50 USDC का टोकन अमाउंट देकर अपनी चारपाई रिजर्व करें।</p>
+            <button
+              onClick={() => { setShowBaithakModal(false); handlePayment(0.50) }}
+              className="w-full py-3 rounded-xl bg-emerald-700 text-white font-bold text-xs cursor-pointer"
+            >
+              🪑 0.50 USDC से बुक करें
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showGiftModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-purple-500 p-6 space-y-4 shadow-2xl text-amber-950">
+            <div className="flex justify-between items-center">
+              <h3 className="font-black text-purple-800 text-base">🎁 गिफ्ट ए चाय (Pay-it-Forward)</h3>
+              <button onClick={() => setShowGiftModal(false)} className="text-amber-900 font-bold text-sm cursor-pointer">✕</button>
+            </div>
+            <p className="text-xs text-amber-900">0.50 USDC फ्री कम्युनिटी पूल में जोड़ें ताकि कोई ज़रूरतमंद मुफ्त चाय पी सके।</p>
+            <button
+              onClick={() => { setShowGiftModal(false); handlePayment(0.50) }}
+              className="w-full py-3 rounded-xl bg-purple-700 text-white font-bold text-xs cursor-pointer"
+            >
+              🎁 0.50 USDC पूल में डालें
             </button>
           </div>
         </div>
