@@ -44,6 +44,7 @@ import { type Lang, strings, loadLang, saveLang } from '@/i18n'
 import { purgeWagmiCache } from '@/safe-storage'
 import { useSpeech } from '@/hooks/useSpeech'
 import QrScanner, { qrScanSupported } from './QrScanner'
+import { BizSwitcher, StarRating, ChaiExtras, BottomNav, BIZ_META, loadBiz, saveBiz, clipBytes, type BizKey } from './ChaiExtras'
 import tipJarArtifact from '../../contracts/out/TipJar.sol/TipJar.json'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -57,10 +58,14 @@ const ARC_RPC = 'https://rpc.testnet.arc.io'
 const arcViemChain = {
   id: ARC_TESTNET_CHAIN_ID,
   name: arcChain.name,
-  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: arcChain.nativeCurrency.decimals },
+  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
   rpcUrls: { default: { http: [ARC_RPC] } },
 } as const
-const arcPublicClient = createPublicClient({ chain: arcViemChain, transport: http(ARC_RPC) })
+// Reads retry a few times and time out, so a slow RPC never shows an error popup
+const arcPublicClient = createPublicClient({
+  chain: arcViemChain,
+  transport: http(ARC_RPC, { retryCount: 5, retryDelay: 2000, timeout: 10_000 }),
+})
 
 const NATIVE_DECIMALS = 18
 const ERC20_DECIMALS = 6
@@ -81,7 +86,8 @@ function formatNativeUsdc(raw: bigint): string {
 
 // ── Menu ───────────────────────────────────────────────────────────────────────
 interface MenuItem {
-  key: 'chai' | 'kulhadChai' | 'masalaChai' | 'samosa' | 'kachori' | 'lassi' | 'aloo' | 'combo' | 'kulhad'
+  key: string
+  label?: { hi: string; en: string }
   emoji: string
   price: string
   amount: string
@@ -103,6 +109,37 @@ const MENU_ITEMS: MenuItem[] = [
   { key: 'kulhad',     emoji: '🏺✨', price: '2.50 USDC', amount: '2.5',  color: '#d97706', selectedBg: 'rgba(217,119,6,0.15)' },
 ]
 
+// Other kinds of shops (same contract, only the menu changes)
+function mk(key: string, emoji: string, cents: number, hi: string, en: string, color: string): MenuItem {
+  const a = cents / 100
+  return { key, emoji, price: `${a.toFixed(2)} USDC`, amount: String(a), color, selectedBg: `${color}26`, label: { hi, en } }
+}
+const BUSINESS_MENUS: Record<BizKey, MenuItem[]> = {
+  chai: MENU_ITEMS,
+  store: [
+    mk('atta', '🌾', 150, 'आटा (1 किलो)', 'Atta (1 kg)', '#f59e0b'),
+    mk('rice', '🍚', 200, 'चावल (1 किलो)', 'Rice (1 kg)', '#10b981'),
+    mk('dal', '🫘', 180, 'दाल (500 ग्राम)', 'Dal (500 g)', '#ef4444'),
+    mk('oil', '🛢️', 300, 'तेल (1 लीटर)', 'Oil (1 L)', '#f97316'),
+    mk('milk', '🥛', 70, 'दूध (1 लीटर)', 'Milk (1 L)', '#14b8a6'),
+    mk('biscuit', '🍪', 40, 'बिस्कुट', 'Biscuits', '#8b5cf6'),
+  ],
+  freelancer: [
+    mk('review', '🔍', 200, 'कोड / डिज़ाइन रिव्यू', 'Code / design review', '#f59e0b'),
+    mk('call', '📞', 500, 'सलाह कॉल (30 मिनट)', 'Advice call (30 min)', '#10b981'),
+    mk('logo', '🎨', 1000, 'लोगो डिज़ाइन', 'Logo design', '#ec4899'),
+    mk('page', '🌐', 2500, 'लैंडिंग पेज', 'Landing page', '#6366f1'),
+    mk('coffee', '☕', 100, 'कॉफी पिलाइए', 'Buy me a coffee', '#d97706'),
+  ],
+  corporate: [
+    mk('consult', '📊', 1500, 'परामर्श सत्र', 'Consulting session', '#f59e0b'),
+    mk('audit', '🧾', 3000, 'ऑडिट रिपोर्ट', 'Audit report', '#ef4444'),
+    mk('train', '🎓', 2000, 'टीम ट्रेनिंग', 'Team training', '#10b981'),
+    mk('support', '🛠️', 1000, 'मासिक सपोर्ट', 'Monthly support', '#6366f1'),
+  ],
+}
+const ALL_ITEMS: MenuItem[] = [...BUSINESS_MENUS.chai, ...BUSINESS_MENUS.store, ...BUSINESS_MENUS.freelancer, ...BUSINESS_MENUS.corporate]
+
 const BADGE_STYLES: Record<NonNullable<MenuItem['badge']>, { bg: string; color: string; label: { hi: string; en: string } }> = {
   bestseller: { bg: 'rgba(251,191,36,0.18)', color: '#b45309', label: { hi: 'बेस्टसेलर', en: 'Bestseller' } },
   hot:        { bg: 'rgba(239,68,68,0.14)',  color: '#dc2626', label: { hi: 'गरमागरम',   en: 'Hot'        } },
@@ -112,6 +149,8 @@ const BADGE_STYLES: Record<NonNullable<MenuItem['badge']>, { bg: string; color: 
 }
 
 function getMenuLabel(key: MenuItem['key'], s: typeof strings['en']): string {
+  const extraItem = ALL_ITEMS.find((i) => i.key === key && i.label)
+  if (extraItem?.label) return extraItem.label[s === strings.hi ? 'hi' : 'en']
   if (key === 'chai')       return s.menuItemChai
   if (key === 'kulhadChai') return s.menuItemKulhadChai
   if (key === 'masalaChai') return s.menuItemMasalaChai
@@ -127,7 +166,7 @@ type CartMap = Partial<Record<MenuItem['key'], number>>
 
 function cartTotal(cart: CartMap): string {
   let sum = 0
-  for (const item of MENU_ITEMS) {
+  for (const item of ALL_ITEMS) {
     const qty = cart[item.key] ?? 0
     if (qty > 0) sum += qty * parseFloat(item.amount)
   }
@@ -135,7 +174,7 @@ function cartTotal(cart: CartMap): string {
 }
 
 function cartSummaryLine(cart: CartMap, s: typeof strings['en']): string {
-  return MENU_ITEMS
+  return ALL_ITEMS
     .filter((i) => (cart[i.key] ?? 0) > 0)
     .map((i) => `${getMenuLabel(i.key, s)} ×${cart[i.key] ?? 0}`)
     .join(', ')
@@ -1042,6 +1081,13 @@ function TipJarInner() {
 
   // Cart-based ordering
   const [cart, setCart] = useState<CartMap>({})
+  const [biz, setBiz] = useState<BizKey>(loadBiz)
+  const [stars, setStars] = useState(0)
+  const visibleItems = BUSINESS_MENUS[biz]
+  const pickBiz = (b: BizKey) => {
+    setBiz(b); saveBiz(b); setCart({})
+    speak(BIZ_META[b][lang])
+  }
   const [fulfillment, setFulfillment] = useState<Fulfillment>('dine-in')
   const totalStr = cartTotal(cart)
   const hasItems = parseFloat(totalStr) > 0
@@ -1153,7 +1199,7 @@ function TipJarInner() {
   useEffect(() => { refetchAllRef.current = refetchAll }, [refetchAll])
 
   // Final message
-  const finalMessage = (vibeTag ? `${vibeTag} — ` : '') + (message.trim() || cartSummaryLine(cart, s).slice(0, 60))
+  const finalMessage = (stars > 0 ? `⭐${stars} ` : '') + (vibeTag ? `${vibeTag} — ` : '') + (message.trim() || cartSummaryLine(cart, s).slice(0, 60))
   const finalMessageRef = useRef(finalMessage)
   useEffect(() => { finalMessageRef.current = finalMessage }, [finalMessage])
 
@@ -1195,24 +1241,41 @@ function TipJarInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [receiptStatus, receiptData])
 
-  // Brave 12s fallback
+  // If no receipt after 60 s we do NOT pretend it worked: show "pending" with an explorer link
+  // and a "check again" button instead.
   useEffect(() => {
     if (step !== 'pending-tip' || !pendingHash) return
     const timer = setTimeout(() => {
-      const order: MyOrder = {
-        txHash: pendingHash, amount: tipAmountRef.current,
-        message: finalMessageRef.current, fulfillment: fulfillmentRef.current,
-        cartLine: cartSummaryLine(cartRef.current, strings[langRef.current]),
-        timestamp: Date.now(),
-      }
-      setTipHash(pendingHash); setPendingHash(null); setStep('done')
-      setLastOrder(order)
-      setMyOrders((prev) => [order, ...prev].slice(0, 20))
-      if (vibeTagRef.current === 'ekAurCup') setFreeChaiPool(p => p + 1)
-      refetchAllRef.current(); toast(strings[langRef.current].txTimeout, { duration: 6000 })
-    }, 12_000)
+      const sl = strings[langRef.current]
+      setStep('timed-out'); toast(sl.txTimeout, { duration: 6000 })
+    }, 60_000)
     return () => clearTimeout(timer)
   }, [step, pendingHash])
+
+  const recheckTx = async () => {
+    const h = tipHash ?? pendingHash
+    if (!h) return
+    try {
+      const r = await arcPublicClient.getTransactionReceipt({ hash: h })
+      if (r.status === 'success') {
+        const order: MyOrder = {
+          txHash: h, amount: tipAmountRef.current,
+          message: finalMessageRef.current, fulfillment: fulfillmentRef.current,
+          cartLine: cartSummaryLine(cartRef.current, strings[langRef.current]),
+          timestamp: Date.now(),
+        }
+        setTipHash(h); setPendingHash(null); setStep('done')
+        setLastOrder(order)
+        setMyOrders((prev) => [order, ...prev].slice(0, 20))
+        refetchAllRef.current(); speak(strings[langRef.current].thankYouSpoken)
+      } else {
+        const sl = strings[langRef.current]
+        toast.error(sl.txFailed); speak(sl.txFailed); handleReset()
+      }
+    } catch {
+      toast(strings[langRef.current].txTimeout)
+    }
+  }
 
   // Decoupled contract reads
   useEffect(() => {
@@ -1343,14 +1406,16 @@ function TipJarInner() {
     const rawAddr = walletAddr.trim(); const rawName = name.trim()
     const isEvmAddr = /^0x[0-9a-fA-F]{40}$/.test(rawAddr)
     const tipName = rawAddr
-      ? isEvmAddr ? formatAddress(rawAddr) : rawAddr.slice(0, 30)
-      : rawName ? (rawName.length > 30 ? rawName.slice(0, 29) + '…' : rawName) : formatAddress(address)
+      ? isEvmAddr ? formatAddress(rawAddr) : clipBytes(rawAddr, 30)
+      : rawName ? clipBytes(rawName, 30) : formatAddress(address)
     setStep('tipping'); setPendingHash(null)
     let txHash: `0x${string}`
     try {
       txHash = await walletClient.writeContract({
         address: TIPJAR.address, abi: TIPJAR.abi as Abi, functionName: 'tip',
-        args: [tipName, finalMessage.slice(0, 80)], value: nativeValue,
+        args: [tipName, clipBytes(finalMessage, 80)], value: nativeValue,
+        maxFeePerGas: parseUnits('20', 9),
+        maxPriorityFeePerGas: parseUnits('2', 9),
       })
     } catch (e: unknown) {
       setStep('idle')
@@ -1408,7 +1473,7 @@ function TipJarInner() {
   const handleReset = () => {
     speak(s.sendAnother); setStep('idle'); setName(''); setWalletAddr('')
     setMessage(''); setCart({}); setTipHash(null); setPendingHash(null)
-    setFeeEstimate(null); setVibeTag(null); setLastOrder(null)
+    setFeeEstimate(null); setVibeTag(null); setLastOrder(null); setStars(0)
   }
 
   // ── Derived ────────────────────────────────────────────────────────────────────
@@ -1641,6 +1706,10 @@ function TipJarInner() {
                 {/* Retro FM Radio */}
                 <FmRadioWidget lang={lang} />
 
+                <ChaiExtras lang={lang} total={totalCollected} speak={speak} muted={muted} />
+                <BottomNav lang={lang} speak={speak} />
+                <div className="h-16 md:hidden" />
+
                 {/* Web3 trust badges */}
                 <div className="rounded-2xl p-4 space-y-2" style={{ background:'linear-gradient(135deg,rgba(251,191,36,0.10),rgba(234,88,12,0.07))', border:'1px solid rgba(251,191,36,0.28)' }}>
                   <p className="text-xs font-black uppercase tracking-widest mb-1" style={{ color:'#92400e' }}>{lang === 'hi' ? '🔐 Web3 भरोसा' : '🔐 Web3 Trust'}</p>
@@ -1711,41 +1780,4 @@ function TipJarInner() {
                 <div className="rounded-2xl overflow-hidden" style={glass.card}>
                   <button onClick={() => setShowMerchants((v) => !v)} className="w-full flex items-center gap-3 px-5 py-4 text-left" style={{ background:'transparent' }}>
                     <Store size={15} style={{ color:'var(--accent)',flexShrink:0 }} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold" style={{ color:'var(--ink)' }}>{s.merchantTitle}</p>
-                      <p className="text-xs" style={{ color:'var(--muted)' }}>{s.merchantSubtitle}</p>
-                    </div>
-                    {showMerchants ? <ChevronUp size={15} style={{ color:'var(--subtle)' }} /> : <ChevronDown size={15} style={{ color:'var(--subtle)' }} />}
-                  </button>
-                  {showMerchants && (
-                    <div className="px-4 pb-4 space-y-2">
-                      {/* Search + Register */}
-                      <div className="flex gap-2 mb-2">
-                        <input value={merchantSearch} onChange={e => setMerchantSearch(e.target.value)}
-                          placeholder={lang === 'hi' ? '🔍 खोजें…' : '🔍 Search…'}
-                          className="flex-1 rounded-xl px-3 py-2 text-xs outline-none"
-                          style={{ background:'var(--surface-muted)', border:'1px solid rgba(148,163,184,0.2)', color:'var(--ink)' }} />
-                        <button onClick={() => setShowRegisterMerchant(true)}
-                          className="rounded-xl px-3 py-2 text-xs font-bold flex-shrink-0"
-                          style={{ background:'var(--accent)', color:'#fff' }}>
-                          {s.registerMerchantTitle}
-                        </button>
-                      </div>
-                      {merchants.filter(m => !merchantSearch || m.name.toLowerCase().includes(merchantSearch.toLowerCase()) || m.handle.toLowerCase().includes(merchantSearch.toLowerCase())).map((m) => (
-                        <div key={m.address} className="rounded-xl px-3 py-2.5 flex items-center gap-3" style={glass.inner}>
-                          <span className="text-lg flex-shrink-0">{m.emoji}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold" style={{ color:'var(--ink)' }}>{m.name}</p>
-                            <p className="mono text-xs" style={{ color:'var(--subtle)' }}>{m.handle} · {formatAddress(m.address)}</p>
-                          </div>
-                          <button onClick={() => setQrMerchant(m)} title={s.merchantQrTitle} className="p-1.5 rounded-lg flex-shrink-0" style={{ background:'var(--surface-muted)',color:'var(--subtle)' }}><QrCode size={12} /></button>
-                          <button onClick={() => handleMerchantSelect(m)} className="text-xs font-semibold px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background:'var(--accent)',color:'#fff' }}>{s.merchantSelectBtn}</button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Claim Free Chai — Pay-it-Forward */}
-                <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(135deg,rgba(6,78,59,0.7),rgba(5,150,105,0.4))', border: '1.5px solid rgba(52,211,153,0.4)', boxShadow: '0 4px 16px rgba(5,150,105,0.15)' }}>
-                  <p className="text-xs font-black uppercase 
+                 
