@@ -22,6 +22,9 @@ import {
   Award,
   Camera,
   Music,
+  CheckCircle2,
+  Clock,
+  PackageCheck,
 } from 'lucide-react'
 
 // ── CONFIGURATION & CONSTANTS ────────────────────────────────────────────────
@@ -197,7 +200,7 @@ export default function TipJarApp() {
       const client = publicClient || createPublicClient({ transport: http(ARC_RPC) })
       await client.waitForTransactionReceipt({ hash: txHash })
 
-      toast.success(lang === 'hi' ? 'चंदा सफलताપૂર્વक जमा हुआ!' : 'Payment successful!')
+      toast.success(lang === 'hi' ? 'चंदा सफलतापूर्वक जमा हुआ!' : 'Payment successful!')
       speak(lang === 'hi' ? 'धन्यवाद! आपका ऑर्डर दर्ज हो गया है।' : 'Thank you for your order.')
 
       setCart({})
@@ -249,8 +252,8 @@ export default function TipJarApp() {
       <header className="max-w-5xl mx-auto pt-3 mb-4 space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-amber-900 px-2">
           <div className="flex items-center gap-3">
-            <span className="bg-amber-200 px-2.5 py-1 rounded-full border border-amber-400">🌿 Cash Today, Credit Tomorrow[span_6](start_span)[span_6](end_span)</span>
-            <span className="hidden sm:inline opacity-80">☕ Chai Pe Charcha — No Ledger Log[span_7](start_span)[span_7](end_span)</span>
+            <span className="bg-amber-200 px-2.5 py-1 rounded-full border border-amber-400">🌿 Cash Today, Credit Tomorrow[span_2](start_span)[span_2](end_span)</span>
+            <span className="hidden sm:inline opacity-80">☕ Chai Pe Charcha — No Ledger Log[span_3](start_span)[span_3](end_span)</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -269,15 +272,15 @@ export default function TipJarApp() {
              style={{ background: 'linear-gradient(135deg, #f7ebd0 0%, #fae1af 100%)' }}>
           
           <h1 className="text-3xl sm:text-4xl font-black text-amber-900 tracking-wide drop-shadow-sm mb-1">
-            CHAI KA CHANDA[span_8](start_span)[span_8](end_span)
+            CHAI KA CHANDA[span_4](start_span)[span_4](end_span)
           </h1>
           <p className="text-xs font-bold text-amber-800 mb-3">
-            WEB3 SMART CHAI STALL • Fresh Desi Chai & Crispy Snacks • Pay with USDC[span_9](start_span)[span_9](end_span)
+            WEB3 SMART CHAI STALL • Fresh Desi Chai & Crispy Snacks • Pay with USDC[span_5](start_span)[span_5](end_span)
           </p>
 
           {/* 100% Private & Secure Banner */}
           <div className="max-w-md mx-auto mb-4 py-1.5 px-3 rounded-full bg-emerald-100 border border-emerald-400 text-emerald-900 text-xs font-black flex items-center justify-center gap-1.5 shadow-sm">
-            <ShieldCheck size={14} className="text-emerald-700" /> 100% Private & Secure — Zero Public Log[span_10](start_span)[span_10](end_span)
+            <ShieldCheck size={14} className="text-emerald-700" /> 100% Private & Secure — Zero Public Log[span_6](start_span)[span_6](end_span)
           </div>
 
           <div className="flex flex-wrap justify-center gap-2">
@@ -305,13 +308,13 @@ export default function TipJarApp() {
                 🏺
               </div>
               <div>
-                <p className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">Digital Kulhad NFT Loyalty Card[span_11](start_span)[span_11](end_span)</p>
-                <h4 className="text-xs font-bold text-amber-100">Unique on-chain collectibles & loyalty points unlocked on every successful order[span_12](start_span)[span_12](end_span)</h4>
+                <p className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">Digital Kulhad NFT Loyalty Card[span_7](start_span)[span_7](end_span)</p>
+                <h4 className="text-xs font-bold text-amber-100">Unique on-chain collectibles & loyalty points unlocked on every successful order[span_8](start_span)[span_8](end_span)</h4>
               </div>
             </div>
             <div className="text-right pl-2">
               <span className="text-xs font-black text-amber-300 bg-black/40 px-2.5 py-1 rounded-xl border border-amber-500/30">
-                {loyaltyPoints} PTS[span_13](start_span)[span_13](end_span)
+                {loyaltyPoints} PTS[span_9](start_span)[span_9](end_span)
               </span>
             </div>
           </div>
@@ -319,18 +322,18 @@ export default function TipJarApp() {
           {/* Today's Special */}
           <div className="p-3.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md flex items-center justify-between">
             <div>
-              <p className="text-[10px] uppercase font-bold tracking-wider opacity-90">Today's Special[span_14](start_span)[span_14](end_span)</p>
+              <p className="text-[10px] uppercase font-bold tracking-wider opacity-90">Today's Special[span_10](start_span)[span_10](end_span)</p>
               <p className="text-xs font-black">Cutting Chai + 2 Samosas</p>
-              <p className="text-[11px] font-medium opacity-90">1.00 USDC • SAVE 20% • Fresh Elaichi Blend[span_15](start_span)[span_15](end_span)</p>
+              <p className="text-[11px] font-medium opacity-90">1.00 USDC • SAVE 20% • Fresh Elaichi Blend[span_11](start_span)[span_11](end_span)</p>
             </div>
-            <span className="px-2.5 py-1 bg-black/30 rounded-xl text-xs font-bold">HOT[span_16](start_span)[span_16](end_span)</span>
+            <span className="px-2.5 py-1 bg-black/30 rounded-xl text-xs font-bold">HOT[span_12](start_span)[span_12](end_span)</span>
           </div>
 
           {/* Desi FM Music Player */}
           <div className="p-3 rounded-2xl bg-amber-900 text-amber-100 flex items-center justify-between gap-3 shadow-md">
             <div className="flex items-center gap-2">
               <Music size={16} className="text-amber-400" />
-              <span className="text-xs font-bold">Desi FM 92.7 — Lo-Fi Chai Beats[span_17](start_span)[span_17](end_span)</span>
+              <span className="text-xs font-bold">Desi FM 92.7 — Lo-Fi Chai Beats[span_13](start_span)[span_13](end_span)</span>
             </div>
             <audio controls loop className="h-8 max-w-[140px]" src="https://cdn.pixabay.com/audio/2022/10/31/audio_b5a1d5f9d5.mp3" />
           </div>
@@ -338,18 +341,18 @@ export default function TipJarApp() {
           {/* Analytics / Stats Bar */}
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 rounded-2xl bg-amber-200/60 border border-amber-400/60 text-center">
-              <p className="text-[10px] font-bold text-amber-800">Total Sales[span_18](start_span)[span_18](end_span)</p>
-              <p className="text-base font-black text-amber-900">{contractTotal} USDC[span_19](start_span)[span_19](end_span)</p>
+              <p className="text-[10px] font-bold text-amber-800">Total Sales[span_14](start_span)[span_14](end_span)</p>
+              <p className="text-base font-black text-amber-900">{contractTotal} USDC[span_15](start_span)[span_15](end_span)</p>
             </div>
             <div className="p-3 rounded-2xl bg-amber-200/60 border border-amber-400/60 text-center">
-              <p className="text-[10px] font-bold text-amber-800">In Wallet[span_20](start_span)[span_20](end_span)</p>
-              <p className="text-base font-black text-amber-900">954.66 USDC[span_21](start_span)[span_21](end_span)</p>
+              <p className="text-[10px] font-bold text-amber-800">In Wallet[span_16](start_span)[span_16](end_span)</p>
+              <p className="text-base font-black text-amber-900">954.66 USDC[span_17](start_span)[span_17](end_span)</p>
             </div>
           </div>
 
           {/* Menu Items Grid */}
           <div className="space-y-2.5">
-            <h3 className="text-xs font-black text-amber-900 uppercase tracking-wide px-1">Fresh Desi Menu[span_22](start_span)[span_22](end_span)</h3>
+            <h3 className="text-xs font-black text-amber-900 uppercase tracking-wide px-1">Fresh Desi Menu[span_18](start_span)[span_18](end_span)</h3>
             {MENU_ITEMS.map((item) => {
               const qty = cart[item.key] || 0
               return (
@@ -383,13 +386,13 @@ export default function TipJarApp() {
           <div className="sticky top-4 rounded-3xl p-5 bg-white/95 border border-amber-400 shadow-xl space-y-4">
             
             <h3 className="text-sm font-black text-amber-900 border-b border-amber-200 pb-2 flex items-center justify-between">
-              <span>Place Order / Pay Tip[span_23](start_span)[span_23](end_span)</span>
+              <span>Place Order / Pay Tip[span_19](start_span)[span_19](end_span)</span>
               <span className="text-[10px] text-amber-700 font-semibold">Order Ticket</span>
             </h3>
 
             {/* Fulfillment Type */}
             <div>
-              <label className="text-[11px] font-bold text-amber-900 mb-1 block">Order Fulfillment[span_24](start_span)[span_24](end_span)</label>
+              <label className="text-[11px] font-bold text-amber-900 mb-1 block">Order Fulfillment[span_20](start_span)[span_20](end_span)</label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setFulfillment('delivery')}
@@ -397,7 +400,7 @@ export default function TipJarApp() {
                     fulfillment === 'delivery' ? 'bg-orange-600 text-white border-orange-600' : 'bg-amber-100 text-amber-900 border-amber-300'
                   }`}
                 >
-                  Online Delivery / Pre-Order[span_25](start_span)[span_25](end_span)
+                  Online Delivery / Pre-Order[span_21](start_span)[span_21](end_span)
                 </button>
                 <button
                   onClick={() => setFulfillment('dine')}
@@ -405,19 +408,19 @@ export default function TipJarApp() {
                     fulfillment === 'dine' ? 'bg-orange-600 text-white border-orange-600' : 'bg-amber-100 text-amber-900 border-amber-300'
                   }`}
                 >
-                  Dine-In / Takeaway[span_26](start_span)[span_26](end_span)
+                  Dine-In / Takeaway[span_22](start_span)[span_22](end_span)
                 </button>
               </div>
             </div>
 
             {/* Name Input */}
             <div>
-              <label className="text-[11px] font-bold text-amber-900 mb-1 block">Your Name[span_27](start_span)[span_27](end_span)</label>
+              <label className="text-[11px] font-bold text-amber-900 mb-1 block">Your Name[span_23](start_span)[span_23](end_span)</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Ravi Kumar[span_28](start_span)[span_28](end_span)"
+                placeholder="e.g. Ravi Kumar[span_24](start_span)[span_24](end_span)"
                 className="w-full px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-xs font-medium text-amber-950 outline-none focus:border-orange-500"
               />
             </div>
@@ -425,13 +428,13 @@ export default function TipJarApp() {
             {/* Verified Merchant Address Box */}
             <div className="p-3 rounded-2xl bg-amber-50 border border-amber-300 space-y-2">
               <div className="flex justify-between items-center text-[11px]">
-                <span className="font-bold text-amber-900">Verified Merchant Address (Es...)[span_29](start_span)[span_29](end_span)</span>
+                <span className="font-bold text-amber-900">Verified Merchant Address (Es...)[span_25](start_span)[span_25](end_span)</span>
                 <div className="flex gap-1.5">
                   <span className="text-emerald-700 font-bold flex items-center gap-0.5 cursor-pointer hover:underline text-[10px]">
-                    ✓ Set Official Stall Address[span_30](start_span)[span_30](end_span)
+                    ✓ Set Official Stall Address[span_26](start_span)[span_26](end_span)
                   </span>
                   <span className="text-amber-800 font-bold flex items-center gap-0.5 cursor-pointer hover:underline text-[10px]">
-                    <Camera size={10} /> Camera Scan[span_31](start_span)[span_31](end_span)
+                    <Camera size={10} /> Camera Scan[span_27](start_span)[span_27](end_span)
                   </span>
                 </div>
               </div>
@@ -445,7 +448,7 @@ export default function TipJarApp() {
 
             {/* Vibe Selector Tags */}
             <div>
-              <label className="text-[11px] font-bold text-amber-900 mb-1.5 block">Pick a Vibe[span_32](start_span)[span_32](end_span)</label>
+              <label className="text-[11px] font-bold text-amber-900 mb-1.5 block">Pick a Vibe[span_28](start_span)[span_28](end_span)</label>
               <div className="flex flex-wrap gap-1.5">
                 {['Cutting Chai Master', 'Extra Elaichi', 'Crunchy Banaras Vibe', 'Chai Dukaan Star', 'Qawwali Mood'].map((vibe) => (
                   <span
@@ -461,19 +464,19 @@ export default function TipJarApp() {
 
             {/* Special Request */}
             <div>
-              <label className="text-[11px] font-bold text-amber-900 mb-1 block">Special Request / Note[span_33](start_span)[span_33](end_span)</label>
+              <label className="text-[11px] font-bold text-amber-900 mb-1 block">Special Request / Note[span_29](start_span)[span_29](end_span)</label>
               <input
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Make it extra ginger[span_34](start_span)[span_34](end_span)!"
+                placeholder="Make it extra ginger[span_30](start_span)[span_30](end_span)!"
                 className="w-full px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-xs font-medium text-amber-950 outline-none focus:border-orange-500"
               />
             </div>
 
             {/* Amount Quick Buttons */}
             <div>
-              <label className="text-[11px] font-bold text-amber-900 mb-1.5 block">Amount (USDC)[span_35](start_span)[span_35](end_span)</label>
+              <label className="text-[11px] font-bold text-amber-900 mb-1.5 block">Amount (USDC)[span_31](start_span)[span_31](end_span)</label>
               <div className="grid grid-cols-4 gap-2 mb-2">
                 {[0.25, 0.50, 1.00, 2.00].map((amt) => (
                   <button
@@ -481,7 +484,7 @@ export default function TipJarApp() {
                     onClick={() => setCart({ customTip: amt })}
                     className="py-1.5 rounded-xl text-xs font-bold bg-amber-100 border border-amber-300 text-amber-900 hover:bg-amber-200 cursor-pointer"
                   >
-                    ${amt.toFixed(2)}[span_36](start_span)[span_36](end_span)
+                    ${amt.toFixed(2)}[span_32](start_span)[span_32](end_span)
                   </button>
                 ))}
               </div>
@@ -496,7 +499,7 @@ export default function TipJarApp() {
               disabled={isProcessing}
               className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 text-white font-black text-sm shadow-lg hover:from-orange-500 hover:to-amber-500 transition cursor-pointer"
             >
-              {isProcessing ? 'Processing...' : 'Place Order / Pay Tip 🚀[span_37](start_span)[span_37](end_span)'}
+              {isProcessing ? 'Processing...' : 'Place Order / Pay Tip 🚀[span_33](start_span)[span_33](end_span)'}
             </button>
 
           </div>
